@@ -167,6 +167,368 @@ body {
     color: var(--color-neutral-muted);
 }
 
+/* ==========================================================================
+   Authentication & Microsoft Entra ID UI Components
+   ========================================================================== */
+
+.auth-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.auth-box {
+    background: var(--color-surface);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--color-border);
+    transition: all 0.2s ease-in-out;
+}
+
+.auth-box-unauth {
+    border-left: 5px solid var(--color-secondary);
+}
+
+.auth-box-active {
+    border-left: 5px solid var(--color-accent);
+}
+
+.auth-box-rejected {
+    border-left: 5px solid var(--color-warning);
+    background-color: #fff9f5;
+}
+
+.auth-box-notice {
+    border-left: 5px solid #d83b01;
+    background-color: #fdfaf8;
+}
+
+.auth-box-error {
+    border-left: 5px solid #a80000;
+    background-color: #fdf3f2;
+}
+
+.auth-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.auth-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 8px;
+    border-radius: var(--border-radius-sm);
+}
+
+.auth-badge-pending {
+    background-color: #f3f4f6;
+    color: var(--color-neutral-muted);
+}
+
+.auth-badge-active {
+    background-color: #dff6dd;
+    color: var(--color-accent);
+}
+
+.auth-badge-rejected {
+    background-color: #fed9cc;
+    color: var(--color-warning);
+}
+
+.auth-badge-notice {
+    background-color: #fff4ce;
+    color: #795b00;
+}
+
+.auth-provider-pill {
+    font-size: 0.75rem;
+    background-color: rgba(0, 120, 212, 0.1);
+    color: var(--color-secondary);
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.auth-desc {
+    color: var(--color-neutral-muted);
+    font-size: 0.95rem;
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.5;
+}
+
+.auth-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+/* Button System */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.btn-primary {
+    background-color: var(--color-secondary);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-light);
+    box-shadow: 0 2px 6px rgba(0, 120, 212, 0.3);
+}
+
+.btn-secondary {
+    background-color: #ffffff;
+    color: var(--color-neutral-dark);
+    border-color: var(--color-border);
+}
+
+.btn-secondary:hover {
+    background-color: #f3f4f6;
+}
+
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+}
+
+.ms-icon {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Profile Card */
+.profile-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.profile-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.profile-info {
+    flex: 1;
+    min-width: 200px;
+}
+
+.profile-name {
+    font-size: 1.25rem;
+    color: var(--color-neutral-dark);
+    margin-bottom: 2px;
+}
+
+.profile-meta {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.profile-email {
+    font-size: 0.875rem;
+    color: var(--color-neutral-muted);
+}
+
+.user-type-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: var(--border-radius-sm);
+    letter-spacing: 0.05em;
+}
+
+.badge-employee {
+    background-color: #e1dfdd;
+    color: #323130;
+}
+
+.badge-contractor {
+    background-color: #fff4ce;
+    color: #795b00;
+}
+
+/* Identity Mapping Details */
+.identity-mapping-details h4 {
+    font-size: 0.95rem;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.id-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    background-color: #f8fafc;
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-border);
+}
+
+.id-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.id-label {
+    font-size: 0.75rem;
+    color: var(--color-neutral-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.id-value {
+    font-size: 0.875rem;
+    color: var(--color-neutral-dark);
+}
+
+.id-value code {
+    background: #ffffff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--color-border);
+    font-family: Consolas, Monaco, monospace;
+    font-size: 0.8rem;
+}
+
+.status-active {
+    color: var(--color-accent);
+    font-weight: 600;
+}
+
+/* Roles Chip Container */
+.roles-section {
+    margin-top: var(--spacing-md);
+}
+
+.roles-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.role-chip {
+    font-size: 0.8rem;
+    background-color: #e5f1fb;
+    color: var(--color-secondary);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    border: 1px solid #c7e0f4;
+}
+
+.role-chip-empty {
+    background-color: #f3f4f6;
+    color: var(--color-neutral-muted);
+    border-color: #e1dfdd;
+    font-style: italic;
+    font-weight: normal;
+}
+
+/* Setup Instructions & Notices */
+.setup-instructions {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.setup-instructions h4 {
+    font-size: 0.85rem;
+    color: var(--color-primary);
+    margin-top: var(--spacing-xs);
+    margin-bottom: 4px;
+}
+
+.setup-instructions ul,
+.setup-instructions ol {
+    margin-left: 20px;
+    font-size: 0.85rem;
+    color: var(--color-neutral-dark);
+    margin-bottom: var(--spacing-sm);
+}
+
+.setup-instructions li {
+    margin-bottom: 4px;
+}
+
+.setup-instructions code {
+    background-color: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 0.8rem;
+}
+
+.notice-footer {
+    font-size: 0.8rem;
+    color: var(--color-neutral-muted);
+}
+
+.error-banner {
+    background-color: #fed9cc;
+    color: #a80000;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.875rem;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #ffffff;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-left: 6px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 .app-footer {
     background-color: var(--color-surface);
     border-top: 1px solid var(--color-border);

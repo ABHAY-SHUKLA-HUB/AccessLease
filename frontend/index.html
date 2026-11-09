@@ -16,14 +16,23 @@
                 <h1 class="brand-title">AccessLease</h1>
             </div>
             <nav class="nav-placeholder" aria-label="Application navigation placeholder">
-                <span class="nav-status">Phase: STEP 00 Project Initialized</span>
+                <span class="nav-status">Phase: STEP 03 Entra ID Auth</span>
+                <span id="auth-loading-indicator" class="loading-spinner" style="display: none;" title="Processing authentication..."></span>
             </nav>
         </div>
     </header>
 
     <main class="main-container">
+        <!-- Live Microsoft Entra ID Authentication Section -->
+        <section id="auth-status-container" class="auth-section" aria-live="polite">
+            <div class="auth-box auth-box-loading">
+                <div class="loading-message">Initializing Microsoft Entra ID authentication subsystem...</div>
+            </div>
+        </section>
+
+        <!-- System Governance & Architecture Overview -->
         <section class="initialization-card">
-            <div class="badge-status">System Initialized</div>
+            <div class="badge-status">Identity &amp; Governance Engine Active</div>
             <h2>Company-Grade Contractor Access &amp; Offboarding Governance</h2>
             <p class="lead-text">
                 AccessLease governs temporary contractor access lifecycle across enterprise resources,
@@ -54,11 +63,12 @@
             </div>
 
             <div class="initialization-notice">
-                <h3>Architecture Status</h3>
+                <h3>Authentication &amp; Identity Architecture</h3>
                 <p>
-                    Step 00 initialization complete. All application logic, authentication (Entra ID),
-                    database schemas (Azure SQL), and Azure Functions API endpoints will be progressively implemented
-                    in subsequent phases in accordance with strict engineering standards.
+                    <strong>OAuth 2.0 Authorization Code Flow with PKCE:</strong> Front-channel identity is securely authenticated
+                    via Microsoft Entra ID (MSAL Browser). All API requests attach cryptographic Bearer tokens verified on the backend
+                    using Microsoft public signing keys (JWKS RS256). Stable Entra Object IDs (<code>oid</code>) map deterministically
+                    to application users in <code>dbo.users</code>.
                 </p>
             </div>
         </section>
@@ -68,7 +78,10 @@
         <p>&copy; 2026 AccessLease Governance System. Built with HTML5, CSS3, Vanilla JS, Node.js, and Microsoft Azure.</p>
     </footer>
 
+    <!-- Microsoft Authentication Library (MSAL Browser) via Official CDN -->
+    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+    <!-- AccessLease Vanilla JS Modules -->
+    <script src="assets/js/auth.js"></script>
     <script src="assets/js/main.js"></script>
 </body>
 </html>
-

@@ -96,6 +96,92 @@ const environment = {
         return process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://127.0.0.1:5500';
     },
 
+    // Microsoft Entra ID (Azure Active Directory) Authentication
+    get ENTRA_TENANT_ID() {
+        return (process.env.ENTRA_TENANT_ID || '').trim();
+    },
+    get ENTRA_CLIENT_ID() {
+        return (process.env.ENTRA_CLIENT_ID || '').trim();
+    },
+    get ENTRA_CLIENT_SECRET() {
+        return process.env.ENTRA_CLIENT_SECRET || '';
+    },
+    get ENTRA_AUTHORITY() {
+        if (process.env.ENTRA_AUTHORITY) {
+            return process.env.ENTRA_AUTHORITY.trim().replace(/\/+$/, '');
+        }
+        return this.ENTRA_TENANT_ID
+            ? `https://login.microsoftonline.com/${this.ENTRA_TENANT_ID}`
+            : '';
+    },
+    get ENTRA_API_AUDIENCE() {
+        if (process.env.ENTRA_API_AUDIENCE) {
+            return process.env.ENTRA_API_AUDIENCE.trim();
+        }
+        return this.ENTRA_CLIENT_ID ? `api://${this.ENTRA_CLIENT_ID}` : '';
+    },
+    get ENTRA_API_SCOPE() {
+        if (process.env.ENTRA_API_SCOPE) {
+            return process.env.ENTRA_API_SCOPE.trim();
+        }
+        return this.ENTRA_CLIENT_ID ? `api://${this.ENTRA_CLIENT_ID}/access_as_user` : '';
+    },
+    get ENTRA_ISSUER() {
+        if (process.env.ENTRA_ISSUER) {
+            return process.env.ENTRA_ISSUER.trim().replace(/\/+$/, '');
+        }
+        return this.ENTRA_TENANT_ID
+            ? `https://login.microsoftonline.com/${this.ENTRA_TENANT_ID}/v2.0`
+            : '';
+    },
+    get ENTRA_JWKS_URI() {
+        if (process.env.ENTRA_JWKS_URI) {
+            return process.env.ENTRA_JWKS_URI.trim();
+        }
+        return this.ENTRA_TENANT_ID
+            ? `https://login.microsoftonline.com/${this.ENTRA_TENANT_ID}/discovery/v2.0/keys`
+            : '';
+    },
+
+    /**
+     * Checks if Microsoft Entra ID authentication has required non-placeholder configuration.
+     * @returns {{ isValid: boolean, missingFields: string[] }}
+     */
+    validateEntraConfig() {
+        const missingFields = [];
+        const isPlaceholder = (val) => !val || val.includes('00000000-0000-0000-0000-000000000000') || val.includes('your-');
+
+        if (isPlaceholder(this.ENTRA_TENANT_ID)) {
+            missingFields.push('Entra Tenant ID');
+        }
+        if (isPlaceholder(this.ENTRA_CLIENT_ID)) {
+            missingFields.push('Entra Client ID');
+        }
+
+        return {
+            isValid: missingFields.length === 0,
+            missingFields
+        };
+    },
+
+    /**
+     * Returns sanitized public authentication metadata for MSAL / frontend bootstrap.
+     * Strictly omits all secrets (client secret, connection strings, etc.).
+     * @returns {object}
+     */
+    getPublicAuthConfig() {
+        const { isValid, missingFields } = this.validateEntraConfig();
+        return {
+            configured: isValid,
+            clientId: isValid ? this.ENTRA_CLIENT_ID : null,
+            tenantId: isValid ? this.ENTRA_TENANT_ID : null,
+            authority: isValid ? this.ENTRA_AUTHORITY : null,
+            apiAudience: isValid ? this.ENTRA_API_AUDIENCE : null,
+            apiScope: isValid ? this.ENTRA_API_SCOPE : null,
+            missingConfiguration: isValid ? [] : missingFields
+        };
+    },
+
     /**
      * Checks if database configuration has required minimum fields.
      * @returns {{ isValid: boolean, missingFields: string[] }}
@@ -128,13 +214,15 @@ const environment = {
      * @returns {object}
      */
     getPublicEnvironmentSummary() {
-        const { isValid } = this.validateDatabaseConfig();
+        const { isValid: dbValid } = this.validateDatabaseConfig();
+        const { isValid: authValid } = this.validateEntraConfig();
         return {
             status: 'online',
             environment: this.NODE_ENV,
             version: '0.1.0',
             node_version: process.version,
-            database_configured: isValid,
+            database_configured: dbValid,
+            auth_configured: authValid,
             timestamp: new Date().toISOString()
         };
     }

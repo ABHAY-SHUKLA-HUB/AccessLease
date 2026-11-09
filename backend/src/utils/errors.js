@@ -41,11 +41,25 @@ class ConflictError extends AppError {
     }
 }
 
+class UnauthorizedError extends AppError {
+    constructor(message = 'Authentication required', code = 'ERR_UNAUTHORIZED', details = []) {
+        super(message, 401, code, details);
+    }
+}
+
+class ForbiddenError extends AppError {
+    constructor(message = 'Access forbidden', code = 'ERR_FORBIDDEN', details = []) {
+        super(message, 403, code, details);
+    }
+}
+
 module.exports = {
     AppError,
     ValidationError,
     DatabaseError,
     NotFoundError,
-    ConflictError
+    ConflictError,
+    UnauthorizedError,
+    ForbiddenError
 };
 
