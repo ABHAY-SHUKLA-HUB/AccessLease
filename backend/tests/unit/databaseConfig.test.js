@@ -52,3 +52,4 @@ describe('Unit: Database Configuration & Driver Options', () => {
         assert.strictEqual(sanitized.token, '[REDACTED_SECRET]');
     });
 });
+

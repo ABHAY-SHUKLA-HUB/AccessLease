@@ -48,3 +48,4 @@ describe('Unit: Response Formatting', () => {
         assert.deepStrictEqual(httpResponse.jsonBody, body);
     });
 });
+

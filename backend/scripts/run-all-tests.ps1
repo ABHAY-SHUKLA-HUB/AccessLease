@@ -43,3 +43,4 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "`n==================================================================" -ForegroundColor Green
 Write-Host "ALL BACKEND TESTS PASSED SUCCESSFULLY!" -ForegroundColor Green
 Write-Host "==================================================================" -ForegroundColor Green
+

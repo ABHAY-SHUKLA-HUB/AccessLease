@@ -73,3 +73,4 @@ process.on('SIGINT', () => {
     logger.info('Shutting down local server...');
     server.close(() => process.exit(0));
 });
+
