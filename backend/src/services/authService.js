@@ -92,3 +92,4 @@ async function authenticateToken(token, options = {}) {
 module.exports = {
     authenticateToken
 };
+

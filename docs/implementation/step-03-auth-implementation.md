@@ -218,3 +218,4 @@ Open `http://localhost:7071` in the browser. MSAL Browser will immediately rende
 * **No Fake Authentication:** AccessLease does not forge or fabricate mock logins in UI. If Entra ID variables are absent, an explicit setup banner is shown.
 * **Zero Secret Commitment:** Client secrets are never embedded in the frontend or returned by `/api/auth/config`.
 * **Scope Discipline:** Only Step 03 has been implemented. Application RBAC matrices, contractor CRUD, request workflows, and expiry automation are strictly deferred to future steps.
+

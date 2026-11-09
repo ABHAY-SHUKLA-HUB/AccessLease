@@ -107,3 +107,4 @@ describe('Unit: Authentication Middleware (authMiddleware)', () => {
         assert.strictEqual(response.jsonBody.meta.correlation_id, 'test-inv-123');
     });
 });
+

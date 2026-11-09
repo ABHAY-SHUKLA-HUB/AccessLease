@@ -176,3 +176,4 @@ describe('Integration: Authentication Endpoints & Real Database Identity Mapping
         assert.strictEqual(res.jsonBody.data.user.is_active, true);
     });
 });
+

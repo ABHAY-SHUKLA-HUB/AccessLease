@@ -4,8 +4,9 @@
   "description": "AccessLease - Company-Grade Contractor Access & Offboarding Governance (Azure Functions Backend)",
   "main": "src/index.js",
   "scripts": {
-    "start": "func start",
+    "start": "node scripts/start-local.js",
     "start:local": "node scripts/start-local.js",
+    "start:func": "func start",
     "test": "node --test tests/**/*.test.js",
     "test:unit": "node --test tests/unit/**/*.test.js",
     "test:integration": "node --test tests/integration/**/*.test.js"
