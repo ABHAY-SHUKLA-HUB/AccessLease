@@ -167,7 +167,7 @@ Backend dependencies and Azure Functions triggers will be installed and configur
 
 * [x] **STEP 00 — Project Initialization:** Repository setup, architecture layout, baseline UI, `.gitignore`, `.env.example`, and documentation.
 * [x] **STEP 01 — Database Design & Schema Migration:** Azure SQL / Microsoft SQL Server 3NF relational schema (15 core tables), constraints, indexes, `v_AccessExposureQueue` view, `sp_ActivateApprovedGrant` procedure, `tr_ContractorGrantMustExpire` set-based trigger, and test suite.
-* [ ] **STEP 02 — Backend Core Services & Azure Functions Scaffold:** Node.js project configuration, database connection pools, repository layer, and initial serverless triggers.
+* [x] **STEP 02 — System Architecture & Technical Design:** Comprehensive cloud system architecture, Azure component design, deployment topology, trust boundaries, canonical REST API specification, 12 governance data flows, Zero-Trust security architecture, and design trade-off analysis.
 * [ ] **STEP 03 — Identity & Authentication (Entra ID):** Microsoft Entra ID token verification middleware, role assignments, and permission validation.
 * [ ] **STEP 04 — Contractor Lifecycle & Automated Expiration Engine:** Time-bound lease scheduling, background timer triggers for automatic deprovisioning, and recertification workflows.
 * [ ] **STEP 05 — Cryptographic Revocation Proofs & Azure Blob Storage:** Audit report generation, proof bundle packaging, and upload to Azure Blob Storage.
