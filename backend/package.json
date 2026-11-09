@@ -1,0 +1,31 @@
+{
+  "name": "accesslease-backend",
+  "version": "0.1.0",
+  "description": "AccessLease - Company-Grade Contractor Access & Offboarding Governance (Azure Functions Backend)",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "func start",
+    "start:local": "node scripts/start-local.js",
+    "test": "node --test tests/**/*.test.js",
+    "test:unit": "node --test tests/unit/**/*.test.js",
+    "test:integration": "node --test tests/integration/**/*.test.js"
+  },
+  "keywords": [
+    "accesslease",
+    "azure-functions",
+    "contractor-governance",
+    "compliance",
+    "azure-sql"
+  ],
+  "author": "AccessLease Engineering Team",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@azure/functions": "^4.6.0",
+    "dotenv": "^16.4.7",
+    "mssql": "^11.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
