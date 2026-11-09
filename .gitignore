@@ -1,0 +1,86 @@
+# ==============================================================================
+# AccessLease — Git Ignore Configuration
+# Environments: Node.js, Azure Functions, Azure SQL, Vanilla Web
+# ==============================================================================
+
+# Node.js Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+package-lock.json.bak
+
+# Azure Functions Core Tools & Local Settings
+local.settings.json
+.azurefunctions/
+bin/
+obj/
+workers/
+extensions.csproj
+
+# Environment Variables & Secrets (CRITICAL: Never commit secrets)
+.env
+.env.*
+!.env.example
+*.env
+*.local
+
+# Certificates & Private Keys
+*.pem
+*.key
+*.pfx
+*.p12
+*.cer
+*.crt
+
+# Production Builds & Bundles
+dist/
+build/
+out/
+
+# Logs & Diagnostic Outputs
+logs/
+*.log
+
+# Unit Test & Code Coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# IDEs & Code Editors
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.swp
+*.swo
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# Database Backups & Local Data Files
+*.bak
+*.mdf
+*.ldf
+*.dacpac
+
+# Temporary & Cache Files
+.cache/
+.temp/
+tmp/
+*.tmp
