@@ -13,3 +13,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Project baseline initialization verification
     console.info('[AccessLease] Frontend initialized successfully in STEP 00 mode.');
 });
+
