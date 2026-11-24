@@ -539,8 +539,20 @@
                 typeEl.textContent = user.user_type;
                 typeEl.className = `user-type-tag ${user.user_type === 'CONTRACTOR' ? 'badge-contractor' : 'badge-employee'}`;
             }
-            if (uidEl) uidEl.textContent = user.user_id;
-            if (oidEl) oidEl.textContent = user.entra_object_id;
+            // Check if user has administrative privileges
+            const hasAdmin = Boolean(user.roles && user.roles.some(r => (r.role_code || r) === 'SYSTEM_ADMIN'));
+
+            // Technical identifiers are strictly restricted to SYSTEM_ADMIN in the UI
+            const techDetails = document.getElementById('technical-id-details');
+            if (techDetails) {
+                techDetails.style.display = hasAdmin ? 'block' : 'none';
+            }
+            if (uidEl) {
+                uidEl.textContent = hasAdmin ? (user.user_id || '—') : '—';
+            }
+            if (oidEl) {
+                oidEl.textContent = hasAdmin ? (user.entra_object_id || '—') : '—';
+            }
             if (deptEl) deptEl.textContent = user.department || 'Not Assigned';
 
             if (rolesEl) {
@@ -576,7 +588,6 @@
             }
 
             // Toggle admin-only navigation links (e.g. User Management)
-            const hasAdmin = user.roles && user.roles.some(r => (r.role_code || r) === 'SYSTEM_ADMIN');
             const navUsers = document.getElementById('nav-link-users');
             if (navUsers) {
                 navUsers.style.display = hasAdmin ? 'flex' : 'none';

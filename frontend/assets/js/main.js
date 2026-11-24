@@ -18,7 +18,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. Setup Navigation Tab Switching
     setupNavigation();
 
-    // 3. Connect Header Sign-Out Action
+    // 3. Setup Dashboard Card Direct Navigation
+    setupCardNavigation();
+
+    // 4. Setup Responsive Mobile Navigation Drawer
+    setupMobileSidebar();
+
+    // 5. Connect Header Sign-Out Action
     const headerLogoutBtn = document.getElementById('btn-header-logout');
     if (headerLogoutBtn) {
         headerLogoutBtn.addEventListener('click', () => {
@@ -28,8 +34,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // 4. Initialize Microsoft Entra ID Authentication
+    // 6. Initialize Microsoft Entra ID Authentication & Role Listeners
     if (window.AccessLeaseAuth) {
+        window.AccessLeaseAuth.subscribe((user) => {
+            const moduleCardUsers = document.getElementById('module-card-users');
+            if (moduleCardUsers) {
+                const hasAdmin = user && user.roles && user.roles.some(r => (r.role_code || r) === 'SYSTEM_ADMIN');
+                moduleCardUsers.style.display = hasAdmin ? 'flex' : 'none';
+            }
+        });
+
         await window.AccessLeaseAuth.initialize();
     } else {
         console.error('[AccessLease] Authentication module (auth.js) is not loaded.');
@@ -122,5 +136,74 @@ function setupNavigation() {
                 }
             });
         });
+    });
+}
+
+/**
+ * Enables direct module card action buttons (data-navigate="view-...") to activate target views.
+ */
+function setupCardNavigation() {
+    const cardButtons = document.querySelectorAll('.module-nav-btn[data-navigate]');
+    cardButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetViewId = btn.getAttribute('data-navigate');
+            if (!targetViewId) return;
+
+            const matchingNavLink = document.querySelector(`.nav-link[data-view="${targetViewId}"]`);
+            if (matchingNavLink) {
+                matchingNavLink.click();
+                const mainEl = document.getElementById('main-content');
+                if (mainEl) mainEl.scrollTop = 0;
+            }
+        });
+    });
+}
+
+/**
+ * Sets up accessible responsive mobile sidebar drawer toggle and backdrop handling.
+ */
+function setupMobileSidebar() {
+    const mobileBtn = document.getElementById('btn-mobile-nav');
+    const sidebar = document.getElementById('app-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+
+    if (!mobileBtn || !sidebar) return;
+
+    function toggleSidebar(open) {
+        const isOpen = typeof open === 'boolean' ? open : !sidebar.classList.contains('sidebar-open');
+        sidebar.classList.toggle('sidebar-open', isOpen);
+        mobileBtn.setAttribute('aria-expanded', String(isOpen));
+        if (backdrop) {
+            backdrop.style.display = isOpen ? 'block' : 'none';
+        }
+    }
+
+    mobileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSidebar();
+    });
+
+    if (backdrop) {
+        backdrop.addEventListener('click', () => {
+            toggleSidebar(false);
+        });
+    }
+
+    // Close mobile drawer when a navigation link is clicked
+    const navLinks = sidebar.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 992) {
+                toggleSidebar(false);
+            }
+        });
+    });
+
+    // Close drawer on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidebar.classList.contains('sidebar-open')) {
+            toggleSidebar(false);
+        }
     });
 }

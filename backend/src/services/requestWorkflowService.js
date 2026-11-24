@@ -67,26 +67,34 @@ class RequestWorkflowService {
     async createAccessRequest(user, data, options = {}) {
         if (!user) throw new ForbiddenError('Authentication required.', 'ERR_UNAUTHORIZED');
 
-        // Mandatory Rule: Authenticated user must be an active contractor
-        if (user.user_type !== 'CONTRACTOR' && !hasRole(user.roles, 'CONTRACTOR')) {
-            throw new ForbiddenError(
-                'Access denied: Only users classified as CONTRACTOR can submit contractor access requests.',
-                'ERR_FORBIDDEN_NOT_CONTRACTOR'
-            );
-        }
-
-        if (!user.is_active) {
-            throw new ForbiddenError('Access denied: Contractor account is deactivated.', 'ERR_USER_INACTIVE');
-        }
-
         const {
             contractorEngagementId,
+            contractorUserId,
             resourceId,
             entitlementId,
             requestedStartDate,
             requestedEndDate,
             businessJustification
         } = data || {};
+
+        // Role authorization check:
+        // 1) Active CONTRACTOR submitting self-service request.
+        // 2) INTERNAL_SPONSOR or SYSTEM_ADMIN submitting on behalf of a contractor (with engagement specified).
+        const isContractor = user.user_type === 'CONTRACTOR' || hasRole(user.roles, 'CONTRACTOR');
+        const canManageRequests = hasRole(user.roles, 'INTERNAL_SPONSOR') || hasRole(user.roles, 'SYSTEM_ADMIN');
+
+        if (!isContractor) {
+            if (!canManageRequests || (!contractorEngagementId && !contractorUserId)) {
+                throw new ForbiddenError(
+                    'Access denied: Only users classified as CONTRACTOR can submit contractor access requests.',
+                    'ERR_FORBIDDEN_NOT_CONTRACTOR'
+                );
+            }
+        }
+
+        if (!user.is_active) {
+            throw new ForbiddenError('Access denied: Contractor account is deactivated.', 'ERR_USER_INACTIVE');
+        }
 
         if (!resourceId) throw new ValidationError('Resource ID is required.');
         if (!entitlementId) throw new ValidationError('Entitlement ID is required.');
@@ -95,9 +103,15 @@ class RequestWorkflowService {
         let engagement = null;
         if (contractorEngagementId) {
             engagement = await engagementRepository.findEngagementById(contractorEngagementId);
-            if (!engagement || engagement.contractor_user_id.toLowerCase() !== user.user_id.toLowerCase()) {
+            if (!engagement) {
+                throw new ValidationError('Specified engagement does not exist.');
+            }
+            if (isContractor && engagement.contractor_user_id.toLowerCase() !== user.user_id.toLowerCase()) {
                 throw new ValidationError('Specified engagement does not belong to the authenticated contractor.');
             }
+        } else if (contractorUserId) {
+            const activeEngagements = await engagementRepository.findEngagementsByContractorId(contractorUserId);
+            engagement = activeEngagements.find(e => e.status === 'ACTIVE');
         } else {
             // Find active engagement for this contractor
             const activeEngagements = await engagementRepository.findEngagementsByContractorId(user.user_id);
@@ -110,6 +124,12 @@ class RequestWorkflowService {
                 [],
                 'ERR_NO_ACTIVE_ENGAGEMENT'
             );
+        }
+
+        const targetContractorUserId = engagement.contractor_user_id;
+        const targetContractor = await userRepository.findUserById(targetContractorUserId);
+        if (!targetContractor || !targetContractor.is_active) {
+            throw new ForbiddenError('Access denied: Contractor account is deactivated.', 'ERR_USER_INACTIVE');
         }
 
         // 2. Resolve Resource and Entitlement in Real Database
@@ -145,7 +165,7 @@ class RequestWorkflowService {
         }
 
         // SoD Check: Requester cannot be sponsor
-        if (sponsorUserId.toLowerCase() === user.user_id.toLowerCase()) {
+        if (sponsorUserId.toLowerCase() === targetContractorUserId.toLowerCase()) {
             throw new ForbiddenError('Separation of Duties violation: Requester cannot sponsor their own engagement.', 'ERR_SELF_APPROVAL_FORBIDDEN');
         }
 
@@ -153,7 +173,7 @@ class RequestWorkflowService {
         // SoD Check: Must be an independent individual (neither requester nor business sponsor)
         const owners = await resourceRepository.getResourceOwners(resource.resource_id);
         const eligibleOwner = owners.find(o =>
-            o.owner_user_id.toLowerCase() !== user.user_id.toLowerCase() &&
+            o.owner_user_id.toLowerCase() !== targetContractorUserId.toLowerCase() &&
             o.owner_user_id.toLowerCase() !== sponsorUserId.toLowerCase()
         );
 
@@ -190,7 +210,7 @@ class RequestWorkflowService {
                     `);
 
                 secUser = secUsersResult.recordset.find(su =>
-                    su.user_id.toLowerCase() !== user.user_id.toLowerCase() &&
+                    su.user_id.toLowerCase() !== targetContractorUserId.toLowerCase() &&
                     su.user_id.toLowerCase() !== sponsorUserId.toLowerCase() &&
                     su.user_id.toLowerCase() !== eligibleOwner.owner_user_id.toLowerCase()
                 );
@@ -229,7 +249,7 @@ class RequestWorkflowService {
             const createdRequest = await requestRepository.createAccessRequest({
                 requestNumber,
                 contractorEngagementId: engagement.engagement_id,
-                requestedByUserId: user.user_id,
+                requestedByUserId: targetContractorUserId,
                 resourceId: resource.resource_id,
                 entitlementId: entitlement.entitlement_id,
                 requestedStartDate: new Date(requestedStartDate),
@@ -279,8 +299,10 @@ class RequestWorkflowService {
                 actorType: 'USER',
                 eventPayload: {
                     request_number: requestNumber,
-                    contractor_user_id: user.user_id,
-                    contractor_name: user.display_name,
+                    contractor_user_id: targetContractorUserId,
+                    contractor_name: targetContractor.display_name,
+                    submitted_by_user_id: user.user_id,
+                    contractor_engagement_id: engagement.engagement_id,
                     resource_code: resource.resource_code,
                     entitlement_code: entitlement.entitlement_code,
                     requested_start_date: requestedStartDate,
@@ -591,14 +613,34 @@ class RequestWorkflowService {
 
         // If request became fully APPROVED, automatically initiate durable provisioning if mapped
         if (result && result.request_status === 'APPROVED') {
+            let provisioned = false;
             try {
                 const provisioningService = require('./provisioningService');
                 await provisioningService.createProvisioningOperation(result.request_id, user, options);
+                provisioned = true;
             } catch (provErr) {
                 logger.info('Automatic provisioning initiation outcome after approval', {
                     requestId: result.request_id,
                     info: provErr.message
                 });
+            }
+
+            // If no automated connector exists or provisioning was not applicable, activate approved grant directly
+            if (!provisioned) {
+                try {
+                    const grantRepository = require('../repositories/grantRepository');
+                    const activated = await grantRepository.activateApprovedGrant(result.request_id, user.user_id);
+                    logger.info('Grant activated via dbo.sp_ActivateApprovedGrant', {
+                        requestId: result.request_id,
+                        grantId: activated.grantId,
+                        grantNumber: activated.grantNumber
+                    });
+                } catch (actErr) {
+                    logger.error('Failed to activate grant via sp_ActivateApprovedGrant after approval', {
+                        requestId: result.request_id,
+                        error: actErr.message
+                    });
+                }
             }
         }
 

@@ -13,6 +13,13 @@
     <header class="app-header" role="banner">
         <div class="header-container">
             <div class="brand">
+                <button id="btn-mobile-nav" class="btn-mobile-nav" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="app-sidebar">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
                 <div class="brand-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
                         <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
@@ -21,7 +28,7 @@
                 <div class="brand-text">
                     <div class="brand-row">
                         <h1 class="brand-title">AccessLease</h1>
-                        <span class="brand-badge">Enterprise Governance</span>
+                        <span class="brand-badge">Enterprise IGA</span>
                     </div>
                     <span class="brand-subtitle">Contractor Access &amp; Offboarding Governance Platform</span>
                 </div>
@@ -50,78 +57,168 @@
 
     <!-- Application Body with Sidebar and Main Workspace -->
     <div class="app-layout">
+        <!-- Responsive Mobile Backdrop Overlay -->
+        <div id="sidebar-backdrop" class="sidebar-backdrop" style="display: none;"></div>
+
         <!-- Navigation Sidebar -->
-        <aside class="app-sidebar" role="navigation" aria-label="Governance Lifecycle Navigation">
+        <aside class="app-sidebar" id="app-sidebar" role="navigation" aria-label="Governance Lifecycle Navigation">
             <div class="sidebar-header">
-                <span class="sidebar-label">Governance Modules</span>
+                <div class="sidebar-brand-badge">
+                    <span class="sidebar-brand-dot"></span>
+                    <span class="sidebar-label">Navigation</span>
+                </div>
             </div>
-            <nav class="sidebar-nav">
-                <a href="#shell" class="nav-link active" data-view="view-governance-shell" aria-current="page">
-                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
-                    <span class="nav-text">Governance Shell</span>
-                    <span class="nav-badge nav-badge-active">Active</span>
-                </a>
-                <a href="#contractors" class="nav-link" data-view="view-contractors">
-                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
-                    <span class="nav-text">Contractor Engagements</span>
-                    <span class="nav-badge nav-badge-active">Active</span>
-                </a>
-                <a href="#catalog" class="nav-link" data-view="view-catalog">
-                    <span class="nav-icon" aria-hidden="true">&#9744;</span>
-                    <span class="nav-text">Resource Catalogue</span>
-                    <span class="nav-badge nav-badge-planned">Upcoming</span>
-                </a>
-                <a href="#requests" class="nav-link" data-view="view-requests">
-                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
-                    <span class="nav-text">Access Requests &amp; Leases</span>
-                    <span class="nav-badge nav-badge-active">Active</span>
-                </a>
-                <a href="#approvals" class="nav-link" data-view="view-approvals">
-                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
-                    <span class="nav-text">Multi-Stage Approvals</span>
-                    <span class="nav-badge nav-badge-active">Active</span>
-                </a>
-                <a href="#offboarding" class="nav-link" data-view="view-offboarding">
-                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
-                    <span class="nav-text">Revocation &amp; Offboarding</span>
-                    <span class="nav-badge nav-badge-active">Active</span>
-                </a>
-                <a href="#analytics" class="nav-link" data-view="view-analytics">
-                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
-                    <span class="nav-text">Security Analytics</span>
-                    <span class="nav-badge nav-badge-active">Active</span>
-                </a>
-                <a href="#orphan-access" class="nav-link" data-view="view-orphan-findings">
-                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
-                    <span class="nav-text">Orphan Access Findings</span>
-                    <span class="nav-badge nav-badge-active">Active</span>
-                </a>
-                <a href="#reviews" class="nav-link" data-view="view-reviews">
-                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
-                    <span class="nav-text">Access Reviews</span>
-                    <span class="nav-badge nav-badge-active">Active</span>
-                </a>
-                <a href="#users" id="nav-link-users" class="nav-link" data-view="view-users" style="display: none;">
-                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
-                    <span class="nav-text">User Management</span>
-                    <span class="nav-badge nav-badge-active">Admin</span>
-                </a>
-                <a href="#audit" class="nav-link" data-view="view-audit">
-                    <span class="nav-icon" aria-hidden="true">&#9744;</span>
-                    <span class="nav-text">Audit &amp; Compliance Trail</span>
-                    <span class="nav-badge nav-badge-planned">Upcoming</span>
-                </a>
+            
+            <nav class="sidebar-nav" id="sidebar-nav">
+                <!-- Group 1: Overview -->
+                <div class="nav-group">
+                    <span class="nav-group-title">Overview</span>
+                    <a href="#shell" class="nav-link active" data-view="view-governance-shell" aria-current="page">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                        </span>
+                        <span class="nav-text">Governance Overview</span>
+                        <span class="nav-badge nav-badge-active">Active</span>
+                    </a>
+                </div>
+
+                <!-- Group 2: Governance -->
+                <div class="nav-group">
+                    <span class="nav-group-title">Governance</span>
+                    <a href="#contractors" class="nav-link" data-view="view-contractors">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </span>
+                        <span class="nav-text">Contractor Engagements</span>
+                        <span class="nav-badge nav-badge-active">Active</span>
+                    </a>
+                    <a href="#catalog" class="nav-link nav-link-disabled" data-view="view-catalog" aria-disabled="true" title="Resource Catalogue is scheduled for a future release">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                            </svg>
+                        </span>
+                        <span class="nav-text">Resource Catalogue</span>
+                        <span class="nav-badge nav-badge-upcoming">Upcoming</span>
+                    </a>
+                    <a href="#requests" class="nav-link" data-view="view-requests">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                        </span>
+                        <span class="nav-text">Access Requests &amp; Leases</span>
+                        <span class="nav-badge nav-badge-active">Active</span>
+                    </a>
+                    <a href="#approvals" class="nav-link" data-view="view-approvals">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                        </span>
+                        <span class="nav-text">Multi-Stage Approvals</span>
+                        <span class="nav-badge nav-badge-active">Active</span>
+                    </a>
+                    <a href="#offboarding" class="nav-link" data-view="view-offboarding">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                            </svg>
+                        </span>
+                        <span class="nav-text">Revocation &amp; Offboarding</span>
+                        <span class="nav-badge nav-badge-active">Active</span>
+                    </a>
+                </div>
+
+                <!-- Group 3: Security & Compliance -->
+                <div class="nav-group">
+                    <span class="nav-group-title">Security &amp; Compliance</span>
+                    <a href="#analytics" class="nav-link" data-view="view-analytics">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
+                        </span>
+                        <span class="nav-text">Security Analytics</span>
+                        <span class="nav-badge nav-badge-active">Active</span>
+                    </a>
+                    <a href="#orphan-access" class="nav-link" data-view="view-orphan-findings">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                        </span>
+                        <span class="nav-text">Orphan Access Findings</span>
+                        <span class="nav-badge nav-badge-active">Active</span>
+                    </a>
+                    <a href="#reviews" class="nav-link" data-view="view-reviews">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 11l3 3L22 4"></path>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>
+                        </span>
+                        <span class="nav-text">Access Reviews</span>
+                        <span class="nav-badge nav-badge-active">Active</span>
+                    </a>
+                    <a href="#audit" class="nav-link nav-link-disabled" data-view="view-audit" aria-disabled="true" title="Audit & Compliance Trail is scheduled for a future release">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M12 18v-6"></path>
+                                <path d="M9 15h6"></path>
+                            </svg>
+                        </span>
+                        <span class="nav-text">Audit &amp; Compliance Trail</span>
+                        <span class="nav-badge nav-badge-upcoming">Upcoming</span>
+                    </a>
+                </div>
+
+                <!-- Group 4: Administration -->
+                <div class="nav-group" id="nav-group-admin">
+                    <span class="nav-group-title">Administration</span>
+                    <a href="#users" id="nav-link-users" class="nav-link" data-view="view-users" style="display: none;">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </span>
+                        <span class="nav-text">User Management</span>
+                        <span class="nav-badge nav-badge-admin">Admin</span>
+                    </a>
+                </div>
             </nav>
 
             <div class="sidebar-footer">
-                <div class="sidebar-principles-title">Five Core Pillars</div>
-                <ul class="sidebar-principles-list">
-                    <li><span class="bullet">&bull;</span> Owned Entitlements</li>
-                    <li><span class="bullet">&bull;</span> Multi-Stage Approved</li>
-                    <li><span class="bullet">&bull;</span> Deterministic Expiry</li>
-                    <li><span class="bullet">&bull;</span> Recertification Ready</li>
-                    <li><span class="bullet">&bull;</span> Verifiable Revocation</li>
-                </ul>
+                <div class="sidebar-platform-meta">
+                    <span class="platform-name">AccessLease IGA</span>
+                    <span class="platform-env-pill">Production Ready</span>
+                </div>
             </div>
         </aside>
 
@@ -136,95 +233,406 @@
 
             <!-- Authenticated Workspace View (rendered when user is verified) -->
             <div id="authenticated-shell-view" class="authenticated-shell" style="display: none;">
-                <!-- Tab View 1: Governance Foundation Shell (Active) -->
+                <!-- Tab View 1: Governance Overview Shell (Active) -->
                 <div id="view-governance-shell" class="workspace-view active">
-                    <!-- Verified Identity Resolution Card -->
-                    <section class="content-card">
-                        <div class="card-header-row">
-                            <span class="badge-status">Identity &amp; RBAC Subsystem Verified</span>
-                            <span class="auth-provider-pill">Microsoft Entra ID</span>
+                    <!-- Dashboard Header Banner -->
+                    <div class="dashboard-header-banner">
+                        <div class="banner-title-area">
+                            <div class="banner-badge-row">
+                                <span class="badge-status">Identity Governance &amp; Administration</span>
+                                <span class="auth-provider-pill">Microsoft Entra ID (RS256 Verified)</span>
+                            </div>
+                            <h2 class="banner-heading">Governance Overview</h2>
+                            <p class="banner-description">
+                                Enterprise contractor access governance, automated lifecycle management, and continuous compliance enforcement.
+                            </p>
                         </div>
-                        <h2>Authenticated Identity &amp; Governance Roles</h2>
-                        <p class="lead-text">
-                            Your cloud identity was cryptographically verified via Microsoft Entra ID (RS256 JWKS)
-                            and resolved to an active record in Microsoft SQL Server (<code>dbo.users</code>).
-                        </p>
+                    </div>
 
-                        <div class="identity-details-grid">
-                            <div class="identity-item">
-                                <span class="id-label">Display Name</span>
-                                <span id="shell-user-name" class="id-value strong">—</span>
+                    <!-- Compact Executive Identity Summary Card -->
+                    <section class="content-card identity-executive-card">
+                        <div class="card-header-clean">
+                            <div class="card-header-titles">
+                                <span class="card-eyebrow">Authenticated Session</span>
+                                <h3 class="card-main-title">Identity &amp; Governance Profile</h3>
                             </div>
-                            <div class="identity-item">
-                                <span class="id-label">Corporate Email</span>
-                                <span id="shell-user-email" class="id-value">—</span>
+                            <span class="identity-verified-pill">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+                                </svg>
+                                Verified Account
+                            </span>
+                        </div>
+
+                        <div class="identity-summary-row">
+                            <div class="identity-profile-cell">
+                                <div class="identity-avatar-badge" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </div>
+                                <div class="identity-name-block">
+                                    <span id="shell-user-name" class="user-display-name">—</span>
+                                    <span id="shell-user-email" class="user-email-text">—</span>
+                                </div>
                             </div>
-                            <div class="identity-item">
-                                <span class="id-label">User Classification</span>
+
+                            <div class="identity-meta-cell">
+                                <span class="meta-label">User Classification</span>
                                 <span id="shell-user-type" class="user-type-tag badge-employee">—</span>
                             </div>
-                            <div class="identity-item">
-                                <span class="id-label">Department</span>
-                                <span id="shell-user-dept" class="id-value">—</span>
+
+                            <div class="identity-meta-cell">
+                                <span class="meta-label">Department</span>
+                                <span id="shell-user-dept" class="meta-value">—</span>
                             </div>
-                            <div class="identity-item">
-                                <span class="id-label">Database User ID (GUID)</span>
-                                <span class="id-value"><code><span id="shell-user-id">—</span></code></span>
-                            </div>
-                            <div class="identity-item">
-                                <span class="id-label">Entra Object ID (oid)</span>
-                                <span class="id-value"><code><span id="shell-user-oid">—</span></code></span>
+
+                            <div class="identity-meta-cell">
+                                <span class="meta-label">Directory Status</span>
+                                <span class="auth-verified-indicator">
+                                    <span class="status-dot-active"></span>
+                                    <span>Entra ID Resolved</span>
+                                </span>
                             </div>
                         </div>
 
-                        <div class="roles-section">
-                            <span class="id-label">Assigned Governance Roles</span>
+                        <div class="roles-summary-row">
+                            <span class="roles-row-label">Assigned Governance Roles:</span>
                             <div id="shell-user-roles" class="roles-container">
                                 <span class="role-chip">Loading roles...</span>
                             </div>
                         </div>
+
+                        <!-- Collapsible Technical Details for Diagnostics (SYSTEM_ADMIN only) -->
+                        <details id="technical-id-details" class="technical-id-details" style="display: none;">
+                            <summary class="technical-id-summary">
+                                <span class="summary-text">Technical Identity Details</span>
+                                <span class="summary-hint">(Diagnostic Identifiers for Audit &amp; Administration)</span>
+                            </summary>
+                            <div class="technical-id-grid">
+                                <div class="tech-id-item">
+                                    <span class="tech-id-label">Database User ID (GUID)</span>
+                                    <span class="tech-id-value"><code><span id="shell-user-id">—</span></code></span>
+                                </div>
+                                <div class="tech-id-item">
+                                    <span class="tech-id-label">Entra Object ID (oid)</span>
+                                    <span class="tech-id-value"><code><span id="shell-user-oid">—</span></code></span>
+                                </div>
+                            </div>
+                        </details>
                     </section>
 
-                    <!-- Foundation Architecture Readiness Overview -->
-                    <section class="content-card" style="margin-top: 1.5rem;">
-                        <div class="badge-status">Foundation Phase Rebaselined</div>
-                        <h3>Application Foundation &amp; Governance Engine Readiness</h3>
-                        <p class="lead-text">
-                            AccessLease governs temporary contractor access across enterprise resources,
-                            ensuring every grant is strictly owned, approved, time-bound, reviewable, and verifiably revoked.
-                        </p>
-
-                        <div class="pillars-grid">
-                            <article class="pillar-item">
-                                <h4>Owned</h4>
-                                <p>Permanent business sponsors and technical system owners assigned to every grant.</p>
-                            </article>
-                            <article class="pillar-item">
-                                <h4>Approved</h4>
-                                <p>Multi-stage approval workflows eliminate undocumented or out-of-band access grants.</p>
-                            </article>
-                            <article class="pillar-item">
-                                <h4>Time-Bound</h4>
-                                <p>Deterministic lease periods with automated expiry prevent lingering contractor access.</p>
-                            </article>
-                            <article class="pillar-item">
-                                <h4>Reviewable</h4>
-                                <p>Periodic access recertification with tamper-evident audit history for compliance exams.</p>
-                            </article>
-                            <article class="pillar-item">
-                                <h4>Verifiably Revoked</h4>
-                                <p>Automated revocation engine validates cryptographic and directory deprovisioning proofs.</p>
-                            </article>
+                    <!-- Section: Five Core Pillars of Contractor Governance -->
+                    <section class="dashboard-section">
+                        <div class="section-header-block">
+                            <h3 class="section-title">Five Core Pillars</h3>
+                            <p class="section-subtitle">Foundational principles governing temporary contractor access across all systems.</p>
                         </div>
 
-                        <div class="foundation-summary-box">
-                            <h4>Current Implementation Status (Step 00 Rebaseline)</h4>
-                            <ul class="foundation-checklist">
-                                <li><strong>Relational Database:</strong> 15 normalized tables in 3NF deployed and verified in Microsoft SQL Server / Azure SQL.</li>
-                                <li><strong>Cloud Security:</strong> Microsoft Entra ID OAuth 2.0 PKCE authentication with RS256 token verification.</li>
-                                <li><strong>Full-Stack Integration:</strong> Azure Functions v4 REST backend communicating with Vanilla JavaScript client.</li>
-                                <li><strong>Upcoming Business Modules:</strong> Contractor CRUD, Resource Catalogue, Access Requests, and Revocation scheduled in subsequent steps.</li>
-                            </ul>
+                        <div class="pillars-card-grid">
+                            <article class="pillar-card">
+                                <div class="pillar-icon-wrapper" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="8.5" cy="7" r="4"></circle>
+                                        <polyline points="17 11 19 13 23 9"></polyline>
+                                    </svg>
+                                </div>
+                                <h4 class="pillar-card-title">Owned Entitlements</h4>
+                                <p class="pillar-card-desc">Permanent business sponsors and technical system owners assigned to every grant.</p>
+                            </article>
+
+                            <article class="pillar-card">
+                                <div class="pillar-icon-wrapper" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <path d="M9 15l2 2 4-4"></path>
+                                    </svg>
+                                </div>
+                                <h4 class="pillar-card-title">Multi-Stage Approval</h4>
+                                <p class="pillar-card-desc">Multi-stage approval workflows eliminate undocumented or out-of-band access grants.</p>
+                            </article>
+
+                            <article class="pillar-card">
+                                <div class="pillar-icon-wrapper" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                </div>
+                                <h4 class="pillar-card-title">Deterministic Expiry</h4>
+                                <p class="pillar-card-desc">Deterministic lease periods with automated expiry prevent lingering contractor access.</p>
+                            </article>
+
+                            <article class="pillar-card">
+                                <div class="pillar-icon-wrapper" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M9 11l3 3L22 4"></path>
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                                    </svg>
+                                </div>
+                                <h4 class="pillar-card-title">Recertification Ready</h4>
+                                <p class="pillar-card-desc">Periodic access recertification with immutable append-only audit trail for compliance exams.</p>
+                            </article>
+
+                            <article class="pillar-card">
+                                <div class="pillar-icon-wrapper" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                                    </svg>
+                                </div>
+                                <h4 class="pillar-card-title">Verifiable Revocation</h4>
+                                <p class="pillar-card-desc">Automated revocation engine coordinates directory deprovisioning and validates confirmed provider absence.</p>
+                            </article>
+                        </div>
+                    </section>
+
+                    <!-- Section: Governance Modules Overview Cards -->
+                    <section class="dashboard-section">
+                        <div class="section-header-block">
+                            <h3 class="section-title">Governance Modules Overview</h3>
+                            <p class="section-subtitle">Operational governance modules across contractor onboarding, access requests, analytics, and automated deprovisioning.</p>
+                        </div>
+
+                        <div class="module-card-grid">
+                            <!-- Card 1: Contractor Engagements -->
+                            <article class="module-card">
+                                <div class="module-card-header">
+                                    <div class="module-card-icon-title">
+                                        <span class="module-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                                        </span>
+                                        <h4 class="module-name">Contractor Engagements</h4>
+                                    </div>
+                                    <span class="nav-badge nav-badge-active">Active</span>
+                                </div>
+                                <p class="module-card-desc">Register external contractors, manage fixed-term engagements, and track verified GitHub identity linking status.</p>
+                                <div class="module-card-footer">
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-contractors">Open Module &rarr;</button>
+                                </div>
+                            </article>
+
+                            <!-- Card 2: Access Requests & Leases -->
+                            <article class="module-card">
+                                <div class="module-card-header">
+                                    <div class="module-card-icon-title">
+                                        <span class="module-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                        </span>
+                                        <h4 class="module-name">Access Requests &amp; Leases</h4>
+                                    </div>
+                                    <span class="nav-badge nav-badge-active">Active</span>
+                                </div>
+                                <p class="module-card-desc">Submit time-bound access requests with business justifications, sponsor endorsement, and automatic expiry dates.</p>
+                                <div class="module-card-footer">
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-requests">Open Module &rarr;</button>
+                                </div>
+                            </article>
+
+                            <!-- Card 3: Multi-Stage Approvals -->
+                            <article class="module-card">
+                                <div class="module-card-header">
+                                    <div class="module-card-icon-title">
+                                        <span class="module-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                        </span>
+                                        <h4 class="module-name">Multi-Stage Approvals</h4>
+                                    </div>
+                                    <span class="nav-badge nav-badge-active">Active</span>
+                                </div>
+                                <p class="module-card-desc">Review and authorize access requests through required business sponsor and resource owner approval stages.</p>
+                                <div class="module-card-footer">
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-approvals">Open Module &rarr;</button>
+                                </div>
+                            </article>
+
+                            <!-- Card 4: Revocation & Offboarding -->
+                            <article class="module-card">
+                                <div class="module-card-header">
+                                    <div class="module-card-icon-title">
+                                        <span class="module-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                                        </span>
+                                        <h4 class="module-name">Revocation &amp; Offboarding</h4>
+                                    </div>
+                                    <span class="nav-badge nav-badge-active">Active</span>
+                                </div>
+                                <p class="module-card-desc">Execute automated lease expiries, trigger instant contractor offboarding, and process background revocation queues.</p>
+                                <div class="module-card-footer">
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-offboarding">Open Module &rarr;</button>
+                                </div>
+                            </article>
+
+                            <!-- Card 5: Security Analytics -->
+                            <article class="module-card">
+                                <div class="module-card-header">
+                                    <div class="module-card-icon-title">
+                                        <span class="module-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                                        </span>
+                                        <h4 class="module-name">Security Analytics</h4>
+                                    </div>
+                                    <span class="nav-badge nav-badge-active">Active</span>
+                                </div>
+                                <p class="module-card-desc">Real-time database metrics on active grants, upcoming expirations, revocation pipelines, and review compliance.</p>
+                                <div class="module-card-footer">
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-analytics">Open Module &rarr;</button>
+                                </div>
+                            </article>
+
+                            <!-- Card 6: Orphan Access Findings -->
+                            <article class="module-card">
+                                <div class="module-card-header">
+                                    <div class="module-card-icon-title">
+                                        <span class="module-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+                                        </span>
+                                        <h4 class="module-name">Orphan Access Findings</h4>
+                                    </div>
+                                    <span class="nav-badge nav-badge-active">Active</span>
+                                </div>
+                                <p class="module-card-desc">Automated detection scans to identify lingering access grants on terminated contracts and unauthorized orphan entitlements.</p>
+                                <div class="module-card-footer">
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-orphan-findings">Open Module &rarr;</button>
+                                </div>
+                            </article>
+
+                            <!-- Card 7: Access Reviews -->
+                            <article class="module-card">
+                                <div class="module-card-header">
+                                    <div class="module-card-icon-title">
+                                        <span class="module-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                                        </span>
+                                        <h4 class="module-name">Access Reviews</h4>
+                                    </div>
+                                    <span class="nav-badge nav-badge-active">Active</span>
+                                </div>
+                                <p class="module-card-desc">Periodic recertification campaigns, accountable reviewer determinations, and enforced separation of duties.</p>
+                                <div class="module-card-footer">
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-reviews">Open Module &rarr;</button>
+                                </div>
+                            </article>
+
+                            <!-- Card 8: User Management (Admin Only) -->
+                            <article class="module-card" id="module-card-users" style="display: none;">
+                                <div class="module-card-header">
+                                    <div class="module-card-icon-title">
+                                        <span class="module-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                        </span>
+                                        <h4 class="module-name">User Management</h4>
+                                    </div>
+                                    <span class="nav-badge nav-badge-admin">Admin</span>
+                                </div>
+                                <p class="module-card-desc">Enterprise directory of internal employees, governance role assignments, and privileged access administration.</p>
+                                <div class="module-card-footer">
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-users">Manage Users &rarr;</button>
+                                </div>
+                            </article>
+
+                            <!-- Card 9: Resource Catalogue -->
+                            <article class="module-card module-card-disabled">
+                                <div class="module-card-header">
+                                    <div class="module-card-icon-title">
+                                        <span class="module-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect></svg>
+                                        </span>
+                                        <h4 class="module-name">Resource Catalogue</h4>
+                                    </div>
+                                    <span class="nav-badge nav-badge-upcoming">Upcoming</span>
+                                </div>
+                                <p class="module-card-desc">Centralized repository of protected enterprise cloud systems, risk classifications, and entitlement definitions.</p>
+                                <div class="module-card-footer">
+                                    <span class="module-disabled-note">Database Schema Active (dbo.resources) &bull; Planned</span>
+                                </div>
+                            </article>
+
+                            <!-- Card 10: Audit & Compliance Trail -->
+                            <article class="module-card module-card-disabled">
+                                <div class="module-card-header">
+                                    <div class="module-card-icon-title">
+                                        <span class="module-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                        </span>
+                                        <h4 class="module-name">Audit &amp; Compliance Trail</h4>
+                                    </div>
+                                    <span class="nav-badge nav-badge-upcoming">Upcoming</span>
+                                </div>
+                                <p class="module-card-desc">Immutable governance audit event ledger, compliance exports, and regulatory examination reporting pipelines.</p>
+                                <div class="module-card-footer">
+                                    <span class="module-disabled-note">Database Schema Active (dbo.audit_events) &bull; Planned</span>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+
+                    <!-- Section: Foundation Phase Architecture Overview (Accurately Reconciled) -->
+                    <section class="dashboard-section">
+                        <div class="section-header-block">
+                            <h3 class="section-title">Foundation Architecture Overview</h3>
+                            <p class="section-subtitle">Core technology stack and technical foundation powering the AccessLease governance platform.</p>
+                        </div>
+
+                        <div class="arch-card-grid">
+                            <div class="arch-card">
+                                <div class="arch-card-header">
+                                    <span class="arch-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                                    </span>
+                                    <h4 class="arch-title">Relational Database</h4>
+                                </div>
+                                <p class="arch-spec">15 Normalized Tables in 3NF</p>
+                                <p class="arch-desc">Enforced foreign keys, check constraints, indexed lookup tables, and ACID transaction safety across all governance entities.</p>
+                            </div>
+
+                            <div class="arch-card">
+                                <div class="arch-card-header">
+                                    <span class="arch-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                    </span>
+                                    <h4 class="arch-title">Authentication Subsystem</h4>
+                                </div>
+                                <p class="arch-spec">Microsoft Entra ID (OAuth 2.0 PKCE)</p>
+                                <p class="arch-desc">Cryptographic RS256 JWT validation against public tenant JWKS endpoints with zero secret leakage and role-based access control.</p>
+                            </div>
+
+                            <div class="arch-card">
+                                <div class="arch-card-header">
+                                    <span class="arch-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                    </span>
+                                    <h4 class="arch-title">Backend API Service</h4>
+                                </div>
+                                <p class="arch-spec">Azure Functions v4 (Node.js 22)</p>
+                                <p class="arch-desc">Serverless HTTP triggers, standardized API response envelopes, structured security middleware, and correlation ID tracking.</p>
+                            </div>
+
+                            <div class="arch-card">
+                                <div class="arch-card-header">
+                                    <span class="arch-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                                    </span>
+                                    <h4 class="arch-title">Frontend Architecture</h4>
+                                </div>
+                                <p class="arch-spec">Pure Vanilla JavaScript Client (ES6+)</p>
+                                <p class="arch-desc">Zero external framework bloat, accessible DOM interaction patterns, centralized API client, and MSAL Browser authentication.</p>
+                            </div>
+
+                            <div class="arch-card">
+                                <div class="arch-card-header">
+                                    <span class="arch-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+                                    </span>
+                                    <h4 class="arch-title">Database Engine</h4>
+                                </div>
+                                <p class="arch-spec">Microsoft SQL Server &amp; Azure SQL</p>
+                                <p class="arch-desc">Dual compatibility with local development environments and managed cloud Azure SQL Database with Managed Identity authentication.</p>
+                            </div>
                         </div>
                     </section>
                 </div>
@@ -368,33 +776,80 @@
                     </section>
                 </div>
 
-                <!-- Tab View 4: Access Requests & Leases (Scheduled) -->
+                <!-- Tab View 4: Access Requests & Leases (Active) -->
                 <div id="view-requests" class="workspace-view" style="display: none;">
                     <section class="content-card">
-                        <span class="nav-badge nav-badge-planned">Upcoming Implementation</span>
-                        <h2>Time-Bound Access Requests &amp; Leases</h2>
-                        <p class="lead-text">
-                            Time-bound lease requests with business justification, start/end dates, and sponsor endorsement
-                            will be implemented in the access request stage.
-                        </p>
-                        <div class="module-placeholder-box">
-                            <p><strong>Database Foundation Ready:</strong> <code>dbo.access_requests</code> and <code>dbo.access_grants</code> are fully configured with expiry constraints.</p>
+                        <div class="card-header-row">
+                            <div>
+                                <span class="badge-status">Access Request Governance</span>
+                                <h2>Time-Bound Access Requests &amp; Leases</h2>
+                                <p class="lead-text">
+                                    Request time-bound contractor access to authorized enterprise systems with multi-stage approval routing.
+                                </p>
+                            </div>
+                            <div class="header-actions">
+                                <button id="btn-open-request-modal" class="btn btn-primary">
+                                    <span aria-hidden="true">+</span> New Access Request
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Filter Bar -->
+                        <div class="filter-bar" style="margin-top: 1.25rem;">
+                            <div class="filter-group">
+                                <label class="filter-label" for="request-status-filter">Status Filter:</label>
+                                <select id="request-status-filter" class="form-select filter-select">
+                                    <option value="ALL">All Statuses</option>
+                                    <option value="PENDING_APPROVAL">Pending Approval</option>
+                                    <option value="APPROVED">Approved</option>
+                                    <option value="REJECTED">Rejected</option>
+                                    <option value="CANCELLED">Cancelled</option>
+                                </select>
+                            </div>
+                            <button id="btn-refresh-requests" class="btn btn-secondary btn-sm" title="Refresh request list">
+                                Refresh
+                            </button>
+                        </div>
+
+                        <!-- Requests Table Container -->
+                        <div id="requests-table-wrapper" class="table-container" style="margin-top: 1rem;">
+                            <div class="table-loading-state">Loading access requests...</div>
                         </div>
                     </section>
+
+                    <!-- Modal Container for New Request -->
+                    <div id="new-request-modal-container"></div>
+                    <!-- Modal Container for Request Details -->
+                    <div id="request-details-modal-container"></div>
                 </div>
 
-                <!-- Tab View 5: Multi-Stage Approvals (Scheduled) -->
+                <!-- Tab View 5: Multi-Stage Approvals (Active) -->
                 <div id="view-approvals" class="workspace-view" style="display: none;">
                     <section class="content-card">
-                        <span class="nav-badge nav-badge-planned">Upcoming Implementation</span>
-                        <h2>Multi-Stage Approval Workflows</h2>
-                        <p class="lead-text">
-                            Sponsor and Resource Owner approval routing, decision logging, and conditional grant activation.
-                        </p>
-                        <div class="module-placeholder-box">
-                            <p><strong>Database Foundation Ready:</strong> <code>dbo.approval_steps</code> and stored procedure <code>sp_ActivateApprovedGrant</code> are ready.</p>
+                        <div class="card-header-row">
+                            <div>
+                                <span class="badge-status">Governance Decision Queue</span>
+                                <h2>Multi-Stage Approval Queue</h2>
+                                <p class="lead-text">
+                                    Review, endorse, or reject contractor access requests assigned to your governance role.
+                                    Decisions require cryptographic accountability and are immutably logged to the compliance trail.
+                                </p>
+                            </div>
+                            <div class="header-actions">
+                                <button id="btn-refresh-approvals" class="btn btn-secondary btn-sm" title="Refresh approval inbox">
+                                    Refresh Queue
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Approvals Table Container -->
+                        <div id="approvals-table-wrapper" class="table-container" style="margin-top: 1.25rem;">
+                            <div class="table-loading-state">Checking pending approvals queue...</div>
                         </div>
                     </section>
+
+                    <!-- Modal Container for Approver Decision -->
+                    <div id="approval-decision-modal-container"></div>
                 </div>
 
                 <!-- Tab View 6: Revocation & Offboarding (Active) -->

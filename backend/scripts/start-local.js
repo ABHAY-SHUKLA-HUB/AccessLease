@@ -159,6 +159,37 @@ const server = http.createServer(async (req, res) => {
             query: Object.fromEntries(url.searchParams.entries())
         };
 
+        // Development-only test user resolution via LocalDB for local browser end-to-end verification
+        if (process.env.NODE_ENV === 'development' && (req.headers['x-test-user-id'] || req.headers['x-test-email'])) {
+            try {
+                const userRepository = require('../src/repositories/userRepository');
+                const { getEffectivePermissions } = require('../src/security/permissionPolicy');
+                let userRecord = null;
+                if (req.headers['x-test-user-id']) {
+                    userRecord = await userRepository.findUserById(req.headers['x-test-user-id']);
+                } else if (req.headers['x-test-email']) {
+                    userRecord = await userRepository.findUserByEmail(req.headers['x-test-email']);
+                }
+                if (userRecord && userRecord.is_active) {
+                    const roles = await userRepository.getUserRoles(userRecord.user_id);
+                    const permissions = Array.from(getEffectivePermissions(roles));
+                    mockRequest.user = {
+                        user_id: userRecord.user_id,
+                        entra_object_id: userRecord.entra_object_id,
+                        email: userRecord.email,
+                        display_name: userRecord.display_name,
+                        user_type: userRecord.user_type,
+                        department: userRecord.department,
+                        is_active: userRecord.is_active,
+                        roles,
+                        permissions
+                    };
+                }
+            } catch (err) {
+                console.warn('[start-local] Failed to resolve test user header:', err.message);
+            }
+        }
+
         const mockContext = {
             invocationId: 'local-inv-' + Date.now(),
             log: console.log

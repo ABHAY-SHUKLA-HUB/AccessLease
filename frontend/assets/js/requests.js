@@ -63,6 +63,7 @@
             if (!container) return;
 
             const isContractor = this.hasRole('CONTRACTOR');
+            const canCreate = isContractor || this.hasRole('INTERNAL_SPONSOR') || this.hasRole('SYSTEM_ADMIN');
 
             container.innerHTML = `
                 <section class="content-card">
@@ -77,7 +78,7 @@
                             </p>
                         </div>
                         <div class="header-actions">
-                            ${isContractor ? `
+                            ${canCreate ? `
                                 <button id="btn-open-request-modal" class="btn btn-primary">
                                     <span aria-hidden="true">+</span> New Access Request
                                 </button>
@@ -404,13 +405,37 @@
             const container = document.getElementById('new-request-modal-container');
             if (!container) return;
 
+            const isContractor = this.hasRole('CONTRACTOR');
+            const isAdminOrSponsor = this.hasRole('INTERNAL_SPONSOR') || this.hasRole('SYSTEM_ADMIN');
+
+            let contractorsList = [];
+            let engagementsList = [];
+
             try {
-                // Fetch catalog resources
-                const catRes = await window.apiClient.get('/api/catalog/resources');
-                this.catalogResources = catRes?.data || [];
+                const fetches = [
+                    window.apiClient.get('/api/catalog/resources'),
+                    window.apiClient.get('/api/engagements?status=ACTIVE')
+                ];
+                if (isAdminOrSponsor) {
+                    fetches.push(window.apiClient.get('/api/contractors?isActive=true'));
+                }
+
+                const results = await Promise.all(fetches);
+                this.catalogResources = results[0]?.data || [];
+                engagementsList = results[1]?.data?.engagements || results[1]?.data || [];
+
+                if (isAdminOrSponsor && results[2]) {
+                    contractorsList = results[2]?.data?.contractors || results[2]?.data || [];
+                }
             } catch (e) {
-                alert('Failed to load resource catalog: ' + e.message);
+                alert('Failed to load request prerequisites: ' + e.message);
                 return;
+            }
+
+            // If current user is contractor, filter engagements to their own active engagements
+            if (isContractor) {
+                const myId = this.currentUser?.user_id ? this.currentUser.user_id.toLowerCase() : '';
+                engagementsList = engagementsList.filter(e => !e.contractor_user_id || e.contractor_user_id.toLowerCase() === myId);
             }
 
             const tomorrow = new Date();
@@ -423,16 +448,58 @@
 
             container.innerHTML = `
                 <div class="modal-backdrop" id="modal-new-request">
-                    <div class="modal-dialog" style="max-width: 650px;">
+                    <div class="modal-dialog" style="max-width: 680px;">
                         <div class="modal-header">
                             <div>
                                 <h3 class="modal-title">New Access Lease Request</h3>
                                 <div class="form-help">Submit time-bound access request with automated multi-stage governance routing.</div>
                             </div>
-                            <button type="button" class="btn-close" id="btn-close-new-request-modal">&times;</button>
+                            <button type="button" class="btn-close" id="btn-close-new-request-modal" aria-label="Close">&times;</button>
                         </div>
-                        <form id="form-new-request" class="modal-body">
+                        <form id="form-new-request" class="modal-body" novalidate>
                             <div id="new-request-error-banner" class="error-banner" style="display: none; margin-bottom: 1rem;"></div>
+
+                            <!-- Contractor & Engagement Section -->
+                            ${!isContractor ? `
+                                <div class="form-row">
+                                    <div class="form-group col-half">
+                                        <label class="form-label required" for="req-contractor-select">Contractor Subject</label>
+                                        <select id="req-contractor-select" class="form-select" required>
+                                            <option value="">-- Select External Contractor --</option>
+                                            ${contractorsList.map(c => `
+                                                <option value="${c.user_id}">
+                                                    ${this.escapeHtml(c.display_name)} (${this.escapeHtml(c.email || c.user_id)})
+                                                </option>
+                                            `).join('')}
+                                        </select>
+                                        <span class="form-help">External identity requiring access lease.</span>
+                                    </div>
+                                    <div class="form-group col-half">
+                                        <label class="form-label required" for="req-engagement-select">Associated Engagement</label>
+                                        <select id="req-engagement-select" class="form-select" required disabled>
+                                            <option value="">-- Select Contractor First --</option>
+                                        </select>
+                                        <span class="form-help">Active engagement defining contract boundary.</span>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="form-group">
+                                    <label class="form-label required" for="req-engagement-select">Associated Active Engagement</label>
+                                    <select id="req-engagement-select" class="form-select" required ${engagementsList.length === 0 ? 'disabled' : ''}>
+                                        ${engagementsList.length === 0 ? `
+                                            <option value="">No active engagements found. Active engagement is mandatory.</option>
+                                        ` : `
+                                            <option value="">-- Select Active Engagement --</option>
+                                            ${engagementsList.map(e => `
+                                                <option value="${e.engagement_id}" data-start="${e.start_date}" data-end="${e.end_date}">
+                                                    ${this.escapeHtml(e.vendor_name || 'Engagement')} — Ref: ${this.escapeHtml(e.contract_reference || 'N/A')} (Active until ${this.formatDate(e.end_date)})
+                                                </option>
+                                            `).join('')}
+                                        `}
+                                    </select>
+                                    <span class="form-help">Access lease bounds are constrained by your engagement contract term.</span>
+                                </div>
+                            `}
 
                             <!-- Resource Selection -->
                             <div class="form-group">
@@ -468,6 +535,9 @@
                                     <input type="date" id="req-end-date" class="form-input" value="${defaultEndStr}" required>
                                 </div>
                             </div>
+                            <span id="req-date-help" class="form-help" style="display: block; margin-top: -0.25rem; margin-bottom: 0.75rem;">
+                                Access lease end date cannot exceed the contractor engagement end date.
+                            </span>
 
                             <!-- Duration Counter & Policy Preview -->
                             <div id="policy-preview-box" class="policy-evaluation-box" style="display: none;">
@@ -496,15 +566,82 @@
             const modal = document.getElementById('modal-new-request');
             const closeBtn = document.getElementById('btn-close-new-request-modal');
             const cancelBtn = document.getElementById('btn-cancel-new-request');
+            const contractorSelect = document.getElementById('req-contractor-select');
+            const engagementSelect = document.getElementById('req-engagement-select');
             const resourceSelect = document.getElementById('req-resource-select');
             const entitlementSelect = document.getElementById('req-entitlement-select');
             const startDateInput = document.getElementById('req-start-date');
             const endDateInput = document.getElementById('req-end-date');
+            const dateHelp = document.getElementById('req-date-help');
             const form = document.getElementById('form-new-request');
 
             const closeModal = () => { container.innerHTML = ''; };
             closeBtn.addEventListener('click', closeModal);
             cancelBtn.addEventListener('click', closeModal);
+
+            // If admin/sponsor, wire contractor select to populate engagements
+            if (contractorSelect) {
+                contractorSelect.addEventListener('change', () => {
+                    const selectedCid = contractorSelect.value;
+                    if (!selectedCid) {
+                        engagementSelect.innerHTML = '<option value="">-- Select Contractor First --</option>';
+                        engagementSelect.disabled = true;
+                        this.updatePolicyPreview();
+                        return;
+                    }
+
+                    const matchingEngs = engagementsList.filter(e =>
+                        e.contractor_user_id && e.contractor_user_id.toLowerCase() === selectedCid.toLowerCase()
+                    );
+
+                    if (matchingEngs.length === 0) {
+                        engagementSelect.innerHTML = '<option value="">No active engagements for selected contractor</option>';
+                        engagementSelect.disabled = true;
+                    } else {
+                        engagementSelect.innerHTML = `
+                            <option value="">-- Select Active Engagement --</option>
+                            ${matchingEngs.map(e => `
+                                <option value="${e.engagement_id}" data-start="${e.start_date}" data-end="${e.end_date}">
+                                    ${this.escapeHtml(e.vendor_name || 'Engagement')} — Ref: ${this.escapeHtml(e.contract_reference || 'N/A')} (Active until ${this.formatDate(e.end_date)})
+                                </option>
+                            `).join('')}
+                        `;
+                        engagementSelect.disabled = false;
+                        if (matchingEngs.length === 1) {
+                            engagementSelect.value = matchingEngs[0].engagement_id;
+                            engagementSelect.dispatchEvent(new Event('change'));
+                        }
+                    }
+                    this.updatePolicyPreview();
+                });
+            }
+
+            // Wire engagement selection to update date limits
+            if (engagementSelect) {
+                engagementSelect.addEventListener('change', () => {
+                    const selOpt = engagementSelect.selectedOptions[0];
+                    if (selOpt && selOpt.getAttribute('data-end')) {
+                        const rawEnd = selOpt.getAttribute('data-end');
+                        const endStr = rawEnd.includes('T') ? rawEnd.split('T')[0] : String(rawEnd).substring(0, 10);
+                        endDateInput.max = endStr;
+                        if (dateHelp) {
+                            dateHelp.textContent = `Engagement conclusion date: ${this.formatDate(endStr)}. Access lease must not exceed this date.`;
+                        }
+                        if (endDateInput.value > endStr) {
+                            endDateInput.value = endStr;
+                        }
+                    } else if (dateHelp) {
+                        dateHelp.textContent = 'Access lease end date cannot exceed the contractor engagement end date.';
+                    }
+                    this.updatePolicyPreview();
+                });
+
+                // Trigger change if auto-selected for contractor
+                if (isContractor && engagementsList.length === 1) {
+                    engagementSelect.value = engagementsList[0].engagement_id;
+                    engagementSelect.dispatchEvent(new Event('change'));
+                }
+            }
 
             // Handle resource selection change -> fetch entitlements
             resourceSelect.addEventListener('change', async (e) => {
@@ -547,24 +684,87 @@
             startDateInput.addEventListener('change', () => this.updatePolicyPreview());
             endDateInput.addEventListener('change', () => this.updatePolicyPreview());
 
-            // Handle form submission
+            // Handle form submission with robust validation
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const errBanner = document.getElementById('new-request-error-banner');
                 const submitBtn = document.getElementById('btn-submit-new-request');
 
                 errBanner.style.display = 'none';
+
+                const engagementId = engagementSelect ? engagementSelect.value : '';
+                if (!engagementId) {
+                    errBanner.textContent = 'An active contractor engagement must be selected.';
+                    errBanner.style.display = 'block';
+                    return;
+                }
+
+                const resourceId = resourceSelect.value;
+                if (!resourceId) {
+                    errBanner.textContent = 'Target enterprise resource is required.';
+                    errBanner.style.display = 'block';
+                    return;
+                }
+
+                const entitlementId = entitlementSelect.value;
+                if (!entitlementId) {
+                    errBanner.textContent = 'Requested entitlement is required.';
+                    errBanner.style.display = 'block';
+                    return;
+                }
+
+                const requestedStartDate = startDateInput.value;
+                const requestedEndDate = endDateInput.value;
+                if (!requestedStartDate || !requestedEndDate) {
+                    errBanner.textContent = 'Both start date and end date are required.';
+                    errBanner.style.display = 'block';
+                    return;
+                }
+
+                const start = new Date(requestedStartDate);
+                const end = new Date(requestedEndDate);
+                if (end <= start) {
+                    errBanner.textContent = 'Requested end date must be strictly after the requested start date.';
+                    errBanner.style.display = 'block';
+                    return;
+                }
+
+                // Check engagement end date
+                const engOpt = engagementSelect.selectedOptions[0];
+                if (engOpt && engOpt.getAttribute('data-end')) {
+                    const rawEngEnd = engOpt.getAttribute('data-end');
+                    const engEndStr = rawEngEnd.includes('T') ? rawEngEnd.split('T')[0] : String(rawEngEnd).substring(0, 10);
+                    const engEnd = new Date(engEndStr + 'T23:59:59Z');
+                    if (end > engEnd) {
+                        errBanner.textContent = `Requested end date (${requestedEndDate}) exceeds the contractor engagement conclusion date (${this.formatDate(engEndStr)}). Access leases cannot exceed the engagement term.`;
+                        errBanner.style.display = 'block';
+                        return;
+                    }
+                }
+
+                // Check max duration
+                const resOpt = resourceSelect.selectedOptions[0];
+                const maxDays = parseInt(resOpt?.getAttribute('data-max') || '90', 10);
+                const durationDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                if (durationDays > maxDays) {
+                    errBanner.textContent = `Requested duration (${durationDays} days) exceeds maximum allowable lease duration (${maxDays} days) for this resource.`;
+                    errBanner.style.display = 'block';
+                    return;
+                }
+
+                const businessJustification = document.getElementById('req-justification').value.trim();
+                if (businessJustification.length < 10) {
+                    errBanner.textContent = 'Business justification must be at least 10 characters long.';
+                    errBanner.style.display = 'block';
+                    return;
+                }
+
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Submitting...';
+                submitBtn.textContent = 'Submitting Access Request...';
 
                 try {
-                    const resourceId = resourceSelect.value;
-                    const entitlementId = entitlementSelect.value;
-                    const requestedStartDate = startDateInput.value;
-                    const requestedEndDate = endDateInput.value;
-                    const businessJustification = document.getElementById('req-justification').value;
-
                     await window.apiClient.post('/api/requests', {
+                        contractorEngagementId: engagementId,
                         resourceId,
                         entitlementId,
                         requestedStartDate,
@@ -589,13 +789,15 @@
             const stagesPreview = document.getElementById('policy-stages-preview');
             const resourceSelect = document.getElementById('req-resource-select');
             const entitlementSelect = document.getElementById('req-entitlement-select');
+            const engagementSelect = document.getElementById('req-engagement-select');
             const startDateInput = document.getElementById('req-start-date');
             const endDateInput = document.getElementById('req-end-date');
 
             if (!previewBox) return;
 
-            const resOption = resourceSelect.selectedOptions[0];
-            const entOption = entitlementSelect.selectedOptions[0];
+            const resOption = resourceSelect?.selectedOptions?.[0];
+            const entOption = entitlementSelect?.selectedOptions?.[0];
+            const engOption = engagementSelect?.selectedOptions?.[0];
 
             if (!resOption || !resOption.value) {
                 previewBox.style.display = 'none';
@@ -616,9 +818,23 @@
 
             const isHighRisk = ['HIGH', 'CRITICAL'].includes(resRisk) || ['HIGH', 'CRITICAL'].includes(entSens) || requiresSec || (days > 60 && resRisk !== 'LOW');
 
-            durationText.innerHTML = `Duration: <strong>${days} days</strong> (Resource max allowed: ${maxDays} days)`;
+            let warnings = [];
             if (days > maxDays) {
-                durationText.innerHTML += ` <span style="color: #dc2626; font-weight: bold;">(EXCEEDS MAX CAP)</span>`;
+                warnings.push(`Exceeds maximum allowable duration (${maxDays} days)`);
+            }
+
+            if (engOption && engOption.getAttribute('data-end')) {
+                const rawEngEnd = engOption.getAttribute('data-end');
+                const engEndStr = rawEngEnd.includes('T') ? rawEngEnd.split('T')[0] : String(rawEngEnd).substring(0, 10);
+                const engEnd = new Date(engEndStr + 'T23:59:59Z');
+                if (!isNaN(end.getTime()) && end > engEnd) {
+                    warnings.push(`Exceeds engagement conclusion date (${this.formatDate(engEndStr)})`);
+                }
+            }
+
+            durationText.innerHTML = `Duration: <strong>${days} days</strong> (Resource max: ${maxDays} days)`;
+            if (warnings.length > 0) {
+                durationText.innerHTML += ` <div class="text-danger" style="color: #dc2626; font-size: 0.85rem; font-weight: 600; margin-top: 4px;">⚠️ ${warnings.join(' &bull; ')}</div>`;
             }
 
             if (isHighRisk) {
