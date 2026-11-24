@@ -39,6 +39,8 @@ extensions.csproj
 dist/
 build/
 out/
+backend/public/
+*.zip
 
 # Logs & Diagnostic Outputs
 logs/
@@ -84,4 +86,5 @@ Thumbs.db
 .temp/
 tmp/
 *.tmp
+scratch/
 
