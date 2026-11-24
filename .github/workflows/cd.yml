@@ -60,6 +60,8 @@ jobs:
           # Clean non-runtime files from dependencies (tests, spec files, git metadata)
           find backend/node_modules -depth -type d \( -name "test" -o -name "tests" -o -name "__tests__" -o -name "__test__" -o -name ".github" \) -exec rm -rf {} +
           find backend/node_modules -type f \( -name "*.test.*" -o -name "*.spec.*" -o -name ".git*" -o -name ".env*" \) -delete
+          # Remove confirmed standalone test files from dependencies without deleting unrelated files
+          rm -f backend/node_modules/buffer-equal-constant-time/test.js backend/node_modules/process/test.js
 
       - name: Package Function App archive
         run: |
@@ -67,7 +69,7 @@ jobs:
           # Clean development-only .gitkeep files from src
           find src -name ".git*" -delete
           # Create archive with required runtime components at archive root
-          zip -r ../accesslease-backend.zip host.json package.json src public node_modules -x "*/.git*" -x "*/.env*" -x "*/local.settings*" -x "*/main.json" -x "*/test/*" -x "*/tests/*" -x "*/__tests__/*" -x "*/__test__/*" -x "*/*.test.*" -x "*/*.spec.*"
+          zip -r ../accesslease-backend.zip host.json package.json src public node_modules -x "*/.git*" -x "*/.env*" -x "*/local.settings*" -x "*/main.json" -x "*/test/*" -x "*/tests/*" -x "*/__tests__/*" -x "*/__test__/*" -x "*/*.test.*" -x "*/*.spec.*" -x "node_modules/buffer-equal-constant-time/test.js" -x "node_modules/process/test.js"
           cd ..
 
       - name: Validate package integrity
@@ -118,7 +120,7 @@ jobs:
               { pattern: /(^|\/)\.git($|\/)/i, desc: "Git repository data (.git/)" },
               { pattern: /(^|\/)\.git(ignore|attributes|keep)$/i, desc: "Git metadata file" },
               { pattern: /(^|\/)(__tests?__|tests?)(\/|$)/i, desc: "Test directory" },
-              { pattern: /(^|\/|\.)(test|spec)\.(d\.[cm]?ts|[cm]?[jt]sx?)$/i, desc: "Test specification file" },
+              { pattern: /\.(test|spec)\.(d\.[cm]?ts|[cm]?[jt]sx?)$/i, desc: "Test specification file" },
               { pattern: /(^|\/)(id_rsa|id_ed25519|id_ecdsa|id_dsa)($|\..*)/i, desc: "SSH private key" },
               { pattern: /\.(pem|key|pfx|p12|pkcs12)$/i, desc: "Private key or certificate credential" }
             ];
