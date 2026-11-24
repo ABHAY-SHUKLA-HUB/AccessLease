@@ -102,7 +102,7 @@
                         <span class="nav-text">Contractor Engagements</span>
                         <span class="nav-badge nav-badge-active">Active</span>
                     </a>
-                    <a href="#catalog" class="nav-link nav-link-disabled" data-view="view-catalog" aria-disabled="true" title="Resource Catalogue is scheduled for a future release">
+                    <a href="#catalog" class="nav-link" data-view="view-catalog" id="nav-link-catalog">
                         <span class="nav-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
@@ -112,7 +112,7 @@
                             </svg>
                         </span>
                         <span class="nav-text">Resource Catalogue</span>
-                        <span class="nav-badge nav-badge-upcoming">Upcoming</span>
+                        <span class="nav-badge nav-badge-active">Active</span>
                     </a>
                     <a href="#requests" class="nav-link" data-view="view-requests">
                         <span class="nav-icon" aria-hidden="true">
@@ -536,7 +536,7 @@
                             </article>
 
                             <!-- Card 9: Resource Catalogue -->
-                            <article class="module-card module-card-disabled">
+                            <article class="module-card">
                                 <div class="module-card-header">
                                     <div class="module-card-icon-title">
                                         <span class="module-icon" aria-hidden="true">
@@ -544,11 +544,11 @@
                                         </span>
                                         <h4 class="module-name">Resource Catalogue</h4>
                                     </div>
-                                    <span class="nav-badge nav-badge-upcoming">Upcoming</span>
+                                    <span class="nav-badge nav-badge-active">Active</span>
                                 </div>
                                 <p class="module-card-desc">Centralized repository of protected enterprise cloud systems, risk classifications, and entitlement definitions.</p>
                                 <div class="module-card-footer">
-                                    <span class="module-disabled-note">Database Schema Active (dbo.resources) &bull; Planned</span>
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-catalog">Open Catalogue &rarr;</button>
                                 </div>
                             </article>
 
@@ -761,19 +761,122 @@
                     <div id="contractor-submodal-container"></div>
                 </div>
 
-                <!-- Tab View 3: Resource Catalogue (Scheduled) -->
+                <!-- Tab View 3: Resource Catalogue (Active) -->
                 <div id="view-catalog" class="workspace-view" style="display: none;">
                     <section class="content-card">
-                        <span class="nav-badge nav-badge-planned">Upcoming Implementation</span>
-                        <h2>Resource &amp; Entitlement Catalogue</h2>
-                        <p class="lead-text">
-                            Enterprise resource cataloguing, risk classifications, system owner mapping, and entitlements
-                            will be implemented in the catalog stage.
-                        </p>
-                        <div class="module-placeholder-box">
-                            <p><strong>Database Foundation Ready:</strong> <code>dbo.resources</code>, <code>dbo.entitlements</code>, and <code>dbo.resource_owners</code> tables are active.</p>
+                        <div class="card-header-row">
+                            <div>
+                                <span class="badge-status">Enterprise Governance</span>
+                                <h2>Resource &amp; Entitlement Catalogue</h2>
+                                <p class="lead-text">
+                                    Centralized directory of protected cloud workloads, applications, and databases. Manage entitlements, risk classifications, and designated system owners.
+                                </p>
+                            </div>
+                            <div class="header-actions">
+                                <button id="btn-open-create-resource-modal" class="btn btn-primary" style="display: none;">
+                                    <span aria-hidden="true">+</span> Register Resource
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- KPI Summary Cards -->
+                        <div class="stats-grid" style="margin-top: 1.25rem;">
+                            <div class="stat-card">
+                                <span class="stat-label">Total Resources</span>
+                                <span class="stat-value" id="catalog-stat-total">0</span>
+                                <span class="stat-sub">Across All Environments</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label">Active Entitlements</span>
+                                <span class="stat-value" id="catalog-stat-entitlements">0</span>
+                                <span class="stat-sub">Defined Permissions</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label">Critical Workloads</span>
+                                <span class="stat-value" id="catalog-stat-critical" style="color: #dc2626;">0</span>
+                                <span class="stat-sub">High-Security Governance</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label">Cloud &amp; SaaS Systems</span>
+                                <span class="stat-value" id="catalog-stat-cloud" style="color: #0284c7;">0</span>
+                                <span class="stat-sub">Cloud Subscriptions &amp; Apps</span>
+                            </div>
+                        </div>
+
+                        <!-- Filter Bar -->
+                        <div class="filter-bar" style="margin-top: 1.5rem;">
+                            <div class="filter-group">
+                                <label class="filter-label" for="catalog-search-input">Search Catalogue:</label>
+                                <input type="text" id="catalog-search-input" class="form-control form-control-sm" placeholder="Search by name, code, description, or owner..." style="min-width: 260px;">
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label" for="catalog-type-filter">Resource Type:</label>
+                                <select id="catalog-type-filter" class="form-select form-select-sm">
+                                    <option value="ALL">All Types</option>
+                                    <option value="SAAS">SaaS Applications</option>
+                                    <option value="CLOUD_SUBSCRIPTION">Cloud Subscriptions</option>
+                                    <option value="DATABASE">Databases</option>
+                                    <option value="REPOSITORY">Repositories</option>
+                                    <option value="NETWORK_VPN">VPN / Network</option>
+                                    <option value="INTERNAL_APP">Internal Apps</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label" for="catalog-risk-filter">Risk Level:</label>
+                                <select id="catalog-risk-filter" class="form-select form-select-sm">
+                                    <option value="ALL">All Risk Levels</option>
+                                    <option value="CRITICAL">Critical</option>
+                                    <option value="HIGH">High</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="LOW">Low</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label" for="catalog-status-filter">Status:</label>
+                                <select id="catalog-status-filter" class="form-select form-select-sm">
+                                    <option value="ALL">All Statuses</option>
+                                    <option value="ACTIVE" selected>Active Only</option>
+                                    <option value="INACTIVE">Inactive Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Loading Indicator -->
+                        <div id="catalog-loading-indicator" style="display: none; padding: 2rem; text-align: center; color: #64748b;">
+                            Loading enterprise catalogue...
+                        </div>
+
+                        <!-- Resource Catalog Table -->
+                        <div id="catalog-table-wrapper" style="overflow-x: auto; margin-top: 1rem;">
+                            <table class="data-table" id="catalog-table" style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Resource (Code &amp; Name)</th>
+                                        <th>Type &amp; Environment</th>
+                                        <th>Risk Classification</th>
+                                        <th>Primary Owner</th>
+                                        <th>Entitlements</th>
+                                        <th>Status</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="catalog-table-body">
+                                    <!-- Populated dynamically by catalog.js -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty State Box -->
+                        <div id="catalog-empty-state" class="empty-state-box" style="display: none; padding: 3rem 1.5rem; text-align: center;">
+                            <div class="empty-state-icon" style="font-size: 2.5rem; margin-bottom: 0.5rem;" aria-hidden="true">&#128451;</div>
+                            <h3>No Resources Found</h3>
+                            <p class="empty-state-text">No enterprise resources match the selected search and filter criteria.</p>
                         </div>
                     </section>
+
+                    <!-- Dynamic Modals for Catalog -->
+                    <div id="catalog-modal-container"></div>
+                    <div id="catalog-submodal-container"></div>
                 </div>
 
                 <!-- Tab View 4: Access Requests & Leases (Active) -->
@@ -1482,6 +1585,7 @@
     <script src="assets/js/auth.js"></script>
     <script src="assets/js/contractors.js"></script>
     <script src="assets/js/requests.js"></script>
+    <script src="assets/js/catalog.js"></script>
     <script src="assets/js/offboarding.js"></script>
     <script src="assets/js/analytics.js"></script>
     <script src="assets/js/orphanFindings.js"></script>

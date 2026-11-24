@@ -480,14 +480,418 @@ async function getResourceIdsForOwner(ownerUserId, transaction = null) {
     }
 }
 
+/**
+ * Lists resources with joined primary owner and entitlement metrics.
+ * @param {object} [filter={}]
+ * @param {sql.Transaction} [transaction=null]
+ * @returns {Promise<Array<object>>}
+ */
+async function listResourcesDetailed(filter = {}, transaction = null) {
+    const { search, resourceType, riskLevel, isActive, limit = 100, offset = 0 } = filter;
+
+    try {
+        const runner = transaction || await getPool();
+        const request = runner.request();
+
+        let sqlQuery = `
+            SELECT
+                r.resource_id,
+                r.resource_code,
+                r.resource_name,
+                r.resource_type,
+                r.description,
+                r.risk_level,
+                r.requires_security_approval,
+                r.max_lease_duration_days,
+                r.is_active,
+                r.created_at,
+                r.updated_at,
+                ro.owner_user_id,
+                u.display_name AS owner_name,
+                u.email AS owner_email,
+                (SELECT COUNT(1) FROM dbo.entitlements e WHERE e.resource_id = r.resource_id AND e.is_active = 1) AS active_entitlements_count,
+                (SELECT COUNT(1) FROM dbo.entitlements e WHERE e.resource_id = r.resource_id) AS total_entitlements_count
+            FROM dbo.resources r
+            LEFT JOIN dbo.resource_owners ro ON r.resource_id = ro.resource_id AND ro.ownership_type = 'PRIMARY'
+            LEFT JOIN dbo.users u ON ro.owner_user_id = u.user_id
+            WHERE 1=1
+        `;
+
+        if (search) {
+            sqlQuery += ` AND (r.resource_name LIKE @search OR r.resource_code LIKE @search OR r.description LIKE @search)`;
+            request.input('search', sql.NVarChar(150), `%${search.trim()}%`);
+        }
+
+        if (resourceType) {
+            sqlQuery += ` AND r.resource_type = @resourceType`;
+            request.input('resourceType', sql.NVarChar(50), resourceType);
+        }
+
+        if (riskLevel) {
+            sqlQuery += ` AND r.risk_level = @riskLevel`;
+            request.input('riskLevel', sql.NVarChar(20), riskLevel);
+        }
+
+        if (isActive !== undefined && isActive !== null) {
+            sqlQuery += ` AND r.is_active = @isActive`;
+            request.input('isActive', sql.Bit, isActive ? 1 : 0);
+        }
+
+        sqlQuery += ` ORDER BY r.resource_name ASC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;`;
+        request.input('offset', sql.Int, Math.max(0, offset));
+        request.input('limit', sql.Int, Math.min(200, Math.max(1, limit)));
+
+        const result = await request.query(sqlQuery);
+        return result.recordset || [];
+    } catch (err) {
+        logger.error('Database query failed in listResourcesDetailed', { error: err.message });
+        throw new DatabaseError('Failed to list detailed resources.', err);
+    }
+}
+
+/**
+ * Updates an existing resource.
+ * @param {string} resourceId GUID
+ * @param {object} updateData
+ * @param {sql.Transaction} [transaction=null]
+ * @returns {Promise<object>}
+ */
+async function updateResource(resourceId, updateData, transaction = null) {
+    const {
+        resourceName,
+        resourceType,
+        description,
+        riskLevel,
+        requiresSecurityApproval,
+        maxLeaseDurationDays,
+        isActive
+    } = updateData;
+
+    try {
+        const runner = transaction || await getPool();
+        const request = runner.request();
+        request.input('resourceId', sql.UniqueIdentifier, resourceId.trim());
+
+        const setClauses = ['updated_at = SYSDATETIMEOFFSET()'];
+
+        if (resourceName !== undefined) {
+            setClauses.push('resource_name = @resourceName');
+            request.input('resourceName', sql.NVarChar(150), resourceName.trim());
+        }
+
+        if (resourceType !== undefined) {
+            setClauses.push('resource_type = @resourceType');
+            request.input('resourceType', sql.NVarChar(50), resourceType);
+        }
+
+        if (description !== undefined) {
+            setClauses.push('description = @description');
+            request.input('description', sql.NVarChar(500), description);
+        }
+
+        if (riskLevel !== undefined) {
+            setClauses.push('risk_level = @riskLevel');
+            request.input('riskLevel', sql.NVarChar(20), riskLevel);
+        }
+
+        if (requiresSecurityApproval !== undefined) {
+            setClauses.push('requires_security_approval = @requiresSecurityApproval');
+            request.input('requiresSecurityApproval', sql.Bit, requiresSecurityApproval ? 1 : 0);
+        }
+
+        if (maxLeaseDurationDays !== undefined) {
+            setClauses.push('max_lease_duration_days = @maxLeaseDurationDays');
+            request.input('maxLeaseDurationDays', sql.Int, maxLeaseDurationDays);
+        }
+
+        if (isActive !== undefined) {
+            setClauses.push('is_active = @isActive');
+            request.input('isActive', sql.Bit, isActive ? 1 : 0);
+        }
+
+        const result = await request.query(`
+            UPDATE dbo.resources
+            SET ${setClauses.join(', ')}
+            OUTPUT
+                INSERTED.resource_id,
+                INSERTED.resource_code,
+                INSERTED.resource_name,
+                INSERTED.resource_type,
+                INSERTED.description,
+                INSERTED.risk_level,
+                INSERTED.requires_security_approval,
+                INSERTED.max_lease_duration_days,
+                INSERTED.is_active,
+                INSERTED.created_at,
+                INSERTED.updated_at
+            WHERE resource_id = @resourceId;
+        `);
+
+        return result.recordset[0] || null;
+    } catch (err) {
+        logger.error('Database update failed in updateResource', { resourceId, error: err.message });
+        throw new DatabaseError('Failed to update resource.', err);
+    }
+}
+
+/**
+ * Sets the active status of a resource.
+ * @param {string} resourceId GUID
+ * @param {boolean} isActive
+ * @param {sql.Transaction} [transaction=null]
+ * @returns {Promise<object>}
+ */
+async function setResourceStatus(resourceId, isActive, transaction = null) {
+    try {
+        const runner = transaction || await getPool();
+        const result = await runner.request()
+            .input('resourceId', sql.UniqueIdentifier, resourceId.trim())
+            .input('isActive', sql.Bit, isActive ? 1 : 0)
+            .query(`
+                UPDATE dbo.resources
+                SET is_active = @isActive, updated_at = SYSDATETIMEOFFSET()
+                OUTPUT
+                    INSERTED.resource_id,
+                    INSERTED.resource_code,
+                    INSERTED.resource_name,
+                    INSERTED.resource_type,
+                    INSERTED.is_active,
+                    INSERTED.updated_at
+                WHERE resource_id = @resourceId;
+            `);
+
+        return result.recordset[0] || null;
+    } catch (err) {
+        logger.error('Database update failed in setResourceStatus', { resourceId, isActive, error: err.message });
+        throw new DatabaseError('Failed to update resource status.', err);
+    }
+}
+
+/**
+ * Sets or updates the primary owner of a resource.
+ * @param {string} resourceId GUID
+ * @param {string} ownerUserId GUID
+ * @param {sql.Transaction} [transaction=null]
+ * @returns {Promise<object>}
+ */
+async function setPrimaryResourceOwner(resourceId, ownerUserId, transaction = null) {
+    try {
+        const runner = transaction || await getPool();
+        // Remove existing primary owner if any
+        await runner.request()
+            .input('resourceId', sql.UniqueIdentifier, resourceId.trim())
+            .query(`
+                DELETE FROM dbo.resource_owners
+                WHERE resource_id = @resourceId AND ownership_type = 'PRIMARY';
+            `);
+
+        if (ownerUserId) {
+            const result = await runner.request()
+                .input('resourceId', sql.UniqueIdentifier, resourceId.trim())
+                .input('ownerUserId', sql.UniqueIdentifier, ownerUserId.trim())
+                .query(`
+                    INSERT INTO dbo.resource_owners (
+                        resource_id,
+                        owner_user_id,
+                        ownership_type
+                    )
+                    OUTPUT
+                        INSERTED.resource_owner_id,
+                        INSERTED.resource_id,
+                        INSERTED.owner_user_id,
+                        INSERTED.ownership_type,
+                        INSERTED.assigned_at
+                    VALUES (
+                        @resourceId,
+                        @ownerUserId,
+                        'PRIMARY'
+                    );
+                `);
+            return result.recordset[0];
+        }
+        return null;
+    } catch (err) {
+        logger.error('Database operation failed in setPrimaryResourceOwner', { resourceId, ownerUserId, error: err.message });
+        throw new DatabaseError('Failed to set primary resource owner.', err);
+    }
+}
+
+/**
+ * Removes a resource owner mapping.
+ * @param {string} resourceId GUID
+ * @param {string} ownerUserId GUID
+ * @param {sql.Transaction} [transaction=null]
+ * @returns {Promise<boolean>}
+ */
+async function removeResourceOwner(resourceId, ownerUserId, transaction = null) {
+    try {
+        const runner = transaction || await getPool();
+        const result = await runner.request()
+            .input('resourceId', sql.UniqueIdentifier, resourceId.trim())
+            .input('ownerUserId', sql.UniqueIdentifier, ownerUserId.trim())
+            .query(`
+                DELETE FROM dbo.resource_owners
+                WHERE resource_id = @resourceId AND owner_user_id = @ownerUserId;
+            `);
+
+        return result.rowsAffected[0] > 0;
+    } catch (err) {
+        logger.error('Database delete failed in removeResourceOwner', { resourceId, ownerUserId, error: err.message });
+        throw new DatabaseError('Failed to remove resource owner.', err);
+    }
+}
+
+/**
+ * Finds an entitlement by code under a specific resource.
+ * @param {string} resourceId GUID
+ * @param {string} entitlementCode
+ * @param {sql.Transaction} [transaction=null]
+ * @returns {Promise<object|null>}
+ */
+async function findEntitlementByCode(resourceId, entitlementCode, transaction = null) {
+    if (!resourceId || !entitlementCode) return null;
+
+    try {
+        const runner = transaction || await getPool();
+        const result = await runner.request()
+            .input('resourceId', sql.UniqueIdentifier, resourceId.trim())
+            .input('entitlementCode', sql.NVarChar(50), entitlementCode.trim().toUpperCase())
+            .query(`
+                SELECT TOP 1
+                    e.entitlement_id,
+                    e.resource_id,
+                    e.entitlement_code,
+                    e.entitlement_name,
+                    e.description,
+                    e.sensitivity_level,
+                    e.is_active,
+                    e.created_at,
+                    e.updated_at
+                FROM dbo.entitlements e
+                WHERE e.resource_id = @resourceId AND e.entitlement_code = @entitlementCode;
+            `);
+
+        return result.recordset.length > 0 ? result.recordset[0] : null;
+    } catch (err) {
+        logger.error('Database query failed in findEntitlementByCode', { resourceId, entitlementCode, error: err.message });
+        throw new DatabaseError('Failed to find entitlement by code.', err);
+    }
+}
+
+/**
+ * Updates an entitlement.
+ * @param {string} entitlementId GUID
+ * @param {object} updateData
+ * @param {sql.Transaction} [transaction=null]
+ * @returns {Promise<object>}
+ */
+async function updateEntitlement(entitlementId, updateData, transaction = null) {
+    const {
+        entitlementName,
+        description,
+        sensitivityLevel,
+        isActive
+    } = updateData;
+
+    try {
+        const runner = transaction || await getPool();
+        const request = runner.request();
+        request.input('entitlementId', sql.UniqueIdentifier, entitlementId.trim());
+
+        const setClauses = ['updated_at = SYSDATETIMEOFFSET()'];
+
+        if (entitlementName !== undefined) {
+            setClauses.push('entitlement_name = @entitlementName');
+            request.input('entitlementName', sql.NVarChar(150), entitlementName.trim());
+        }
+
+        if (description !== undefined) {
+            setClauses.push('description = @description');
+            request.input('description', sql.NVarChar(500), description);
+        }
+
+        if (sensitivityLevel !== undefined) {
+            setClauses.push('sensitivity_level = @sensitivityLevel');
+            request.input('sensitivityLevel', sql.NVarChar(20), sensitivityLevel);
+        }
+
+        if (isActive !== undefined) {
+            setClauses.push('is_active = @isActive');
+            request.input('isActive', sql.Bit, isActive ? 1 : 0);
+        }
+
+        const result = await request.query(`
+            UPDATE dbo.entitlements
+            SET ${setClauses.join(', ')}
+            OUTPUT
+                INSERTED.entitlement_id,
+                INSERTED.resource_id,
+                INSERTED.entitlement_code,
+                INSERTED.entitlement_name,
+                INSERTED.description,
+                INSERTED.sensitivity_level,
+                INSERTED.is_active,
+                INSERTED.created_at,
+                INSERTED.updated_at
+            WHERE entitlement_id = @entitlementId;
+        `);
+
+        return result.recordset[0] || null;
+    } catch (err) {
+        logger.error('Database update failed in updateEntitlement', { entitlementId, error: err.message });
+        throw new DatabaseError('Failed to update entitlement.', err);
+    }
+}
+
+/**
+ * Sets entitlement active status.
+ * @param {string} entitlementId GUID
+ * @param {boolean} isActive
+ * @param {sql.Transaction} [transaction=null]
+ * @returns {Promise<object>}
+ */
+async function setEntitlementStatus(entitlementId, isActive, transaction = null) {
+    try {
+        const runner = transaction || await getPool();
+        const result = await runner.request()
+            .input('entitlementId', sql.UniqueIdentifier, entitlementId.trim())
+            .input('isActive', sql.Bit, isActive ? 1 : 0)
+            .query(`
+                UPDATE dbo.entitlements
+                SET is_active = @isActive, updated_at = SYSDATETIMEOFFSET()
+                OUTPUT
+                    INSERTED.entitlement_id,
+                    INSERTED.resource_id,
+                    INSERTED.entitlement_code,
+                    INSERTED.entitlement_name,
+                    INSERTED.is_active,
+                    INSERTED.updated_at
+                WHERE entitlement_id = @entitlementId;
+            `);
+
+        return result.recordset[0] || null;
+    } catch (err) {
+        logger.error('Database update failed in setEntitlementStatus', { entitlementId, isActive, error: err.message });
+        throw new DatabaseError('Failed to update entitlement status.', err);
+    }
+}
+
 module.exports = {
     findResourceById,
     findResourceByCode,
     listResources,
+    listResourcesDetailed,
     createResource,
+    updateResource,
+    setResourceStatus,
+    setPrimaryResourceOwner,
+    removeResourceOwner,
     findEntitlementById,
+    findEntitlementByCode,
     listEntitlementsByResourceId,
     createEntitlement,
+    updateEntitlement,
+    setEntitlementStatus,
     getResourceOwners,
     assignResourceOwner,
     isUserResourceOwner,

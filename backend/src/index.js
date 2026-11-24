@@ -30,7 +30,18 @@ const {
 } = require('./functions/contractors');
 const {
     listCatalogResources,
+    createCatalogResource,
+    getCatalogResourceById,
+    updateCatalogResource,
+    setCatalogResourceStatus,
+    assignCatalogResourceOwner,
+    removeCatalogResourceOwner,
     listResourceEntitlements,
+    createResourceEntitlement,
+    updateResourceEntitlement,
+    setResourceEntitlementStatus
+} = require('./functions/catalog');
+const {
     createRequest,
     listRequests,
     getRequestById,
@@ -258,12 +269,84 @@ app.http('listCatalogResources', {
     handler: listCatalogResources
 });
 
+// 13b. POST /api/catalog/resources - Create catalog resource
+app.http('createCatalogResource', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    route: 'api/catalog/resources',
+    handler: createCatalogResource
+});
+
+// 13c. GET /api/catalog/resources/{id} - Get catalog resource by ID
+app.http('getCatalogResourceById', {
+    methods: ['GET'],
+    authLevel: 'anonymous',
+    route: 'api/catalog/resources/{id}',
+    handler: getCatalogResourceById
+});
+
+// 13d. PUT /api/catalog/resources/{id} - Update catalog resource
+app.http('updateCatalogResource', {
+    methods: ['PUT'],
+    authLevel: 'anonymous',
+    route: 'api/catalog/resources/{id}',
+    handler: updateCatalogResource
+});
+
+// 13e. PATCH /api/catalog/resources/{id}/status - Set catalog resource active/inactive status
+app.http('setCatalogResourceStatus', {
+    methods: ['PATCH'],
+    authLevel: 'anonymous',
+    route: 'api/catalog/resources/{id}/status',
+    handler: setCatalogResourceStatus
+});
+
+// 13f. POST /api/catalog/resources/{id}/owners - Assign owner to resource
+app.http('assignCatalogResourceOwner', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    route: 'api/catalog/resources/{id}/owners',
+    handler: assignCatalogResourceOwner
+});
+
+// 13g. DELETE /api/catalog/resources/{id}/owners/{ownerUserId} - Remove owner from resource
+app.http('removeCatalogResourceOwner', {
+    methods: ['DELETE'],
+    authLevel: 'anonymous',
+    route: 'api/catalog/resources/{id}/owners/{ownerUserId}',
+    handler: removeCatalogResourceOwner
+});
+
 // 14. GET /api/catalog/resources/{id}/entitlements - List resource entitlements
 app.http('listResourceEntitlements', {
     methods: ['GET'],
     authLevel: 'anonymous',
     route: 'api/catalog/resources/{id}/entitlements',
     handler: listResourceEntitlements
+});
+
+// 14b. POST /api/catalog/resources/{id}/entitlements - Create entitlement under resource
+app.http('createResourceEntitlement', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    route: 'api/catalog/resources/{id}/entitlements',
+    handler: createResourceEntitlement
+});
+
+// 14c. PUT /api/catalog/entitlements/{id} - Update entitlement
+app.http('updateResourceEntitlement', {
+    methods: ['PUT'],
+    authLevel: 'anonymous',
+    route: 'api/catalog/entitlements/{id}',
+    handler: updateResourceEntitlement
+});
+
+// 14d. PATCH /api/catalog/entitlements/{id}/status - Set entitlement active/inactive status
+app.http('setResourceEntitlementStatus', {
+    methods: ['PATCH'],
+    authLevel: 'anonymous',
+    route: 'api/catalog/entitlements/{id}/status',
+    handler: setResourceEntitlementStatus
 });
 
 // 15. POST /api/requests - Submit contractor access request

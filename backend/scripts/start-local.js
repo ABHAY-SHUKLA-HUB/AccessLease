@@ -40,7 +40,18 @@ const {
 } = require('../src/functions/contractors');
 const {
     listCatalogResources,
+    createCatalogResource,
+    getCatalogResourceById,
+    updateCatalogResource,
+    setCatalogResourceStatus,
+    assignCatalogResourceOwner,
+    removeCatalogResourceOwner,
     listResourceEntitlements,
+    createResourceEntitlement,
+    updateResourceEntitlement,
+    setResourceEntitlementStatus
+} = require('../src/functions/catalog');
+const {
     createRequest,
     listRequests,
     getRequestById,
@@ -201,7 +212,13 @@ const server = http.createServer(async (req, res) => {
             const contractorIdMatch = pathname.match(/^\/api\/contractors\/([a-zA-Z0-9-]+)$/);
             const engagementIdMatch = pathname.match(/^\/api\/engagements\/([a-zA-Z0-9-]+)$/);
             const engagementStatusMatch = pathname.match(/^\/api\/engagements\/([a-zA-Z0-9-]+)\/status$/);
+            const resourceIdMatch = pathname.match(/^\/api\/catalog\/resources\/([a-zA-Z0-9-]+)$/);
+            const resourceStatusMatch = pathname.match(/^\/api\/catalog\/resources\/([a-zA-Z0-9-]+)\/status$/);
+            const resourceOwnersMatch = pathname.match(/^\/api\/catalog\/resources\/([a-zA-Z0-9-]+)\/owners$/);
+            const resourceOwnerDeleteMatch = pathname.match(/^\/api\/catalog\/resources\/([a-zA-Z0-9-]+)\/owners\/([a-zA-Z0-9-]+)$/);
             const resourceEntitlementsMatch = pathname.match(/^\/api\/catalog\/resources\/([a-zA-Z0-9-]+)\/entitlements$/);
+            const entitlementIdMatch = pathname.match(/^\/api\/catalog\/entitlements\/([a-zA-Z0-9-]+)$/);
+            const entitlementStatusMatch = pathname.match(/^\/api\/catalog\/entitlements\/([a-zA-Z0-9-]+)\/status$/);
             const requestIdMatch = pathname.match(/^\/api\/requests\/([a-zA-Z0-9-]+)$/);
             const requestCancelMatch = pathname.match(/^\/api\/requests\/([a-zA-Z0-9-]+)\/cancel$/);
             const approvalDecisionMatch = pathname.match(/^\/api\/approvals\/([a-zA-Z0-9-]+)\/decision$/);
@@ -278,9 +295,35 @@ const server = http.createServer(async (req, res) => {
                 result = await updateEngagement(mockRequest, mockContext);
             } else if (method === 'GET' && pathname === '/api/catalog/resources') {
                 result = await listCatalogResources(mockRequest, mockContext);
+            } else if (method === 'POST' && pathname === '/api/catalog/resources') {
+                result = await createCatalogResource(mockRequest, mockContext);
+            } else if (method === 'GET' && resourceIdMatch) {
+                mockRequest.params = { id: resourceIdMatch[1] };
+                result = await getCatalogResourceById(mockRequest, mockContext);
+            } else if (method === 'PUT' && resourceIdMatch) {
+                mockRequest.params = { id: resourceIdMatch[1] };
+                result = await updateCatalogResource(mockRequest, mockContext);
+            } else if (method === 'PATCH' && resourceStatusMatch) {
+                mockRequest.params = { id: resourceStatusMatch[1] };
+                result = await setCatalogResourceStatus(mockRequest, mockContext);
+            } else if (method === 'POST' && resourceOwnersMatch) {
+                mockRequest.params = { id: resourceOwnersMatch[1] };
+                result = await assignCatalogResourceOwner(mockRequest, mockContext);
+            } else if (method === 'DELETE' && resourceOwnerDeleteMatch) {
+                mockRequest.params = { id: resourceOwnerDeleteMatch[1], ownerUserId: resourceOwnerDeleteMatch[2] };
+                result = await removeCatalogResourceOwner(mockRequest, mockContext);
             } else if (method === 'GET' && resourceEntitlementsMatch) {
                 mockRequest.params = { id: resourceEntitlementsMatch[1] };
                 result = await listResourceEntitlements(mockRequest, mockContext);
+            } else if (method === 'POST' && resourceEntitlementsMatch) {
+                mockRequest.params = { id: resourceEntitlementsMatch[1] };
+                result = await createResourceEntitlement(mockRequest, mockContext);
+            } else if (method === 'PUT' && entitlementIdMatch) {
+                mockRequest.params = { id: entitlementIdMatch[1] };
+                result = await updateResourceEntitlement(mockRequest, mockContext);
+            } else if (method === 'PATCH' && entitlementStatusMatch) {
+                mockRequest.params = { id: entitlementStatusMatch[1] };
+                result = await setResourceEntitlementStatus(mockRequest, mockContext);
             } else if (method === 'POST' && pathname === '/api/requests') {
                 result = await createRequest(mockRequest, mockContext);
             } else if (method === 'GET' && pathname === '/api/requests') {

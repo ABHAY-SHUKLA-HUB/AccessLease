@@ -114,7 +114,9 @@ function setupNavigation() {
                     view.style.display = 'block';
                     
                     // Trigger refresh on dynamic module views
-                    if (targetViewId === 'view-requests' && window.AccessLeaseRequests) {
+                    if (targetViewId === 'view-catalog' && window.AccessLeaseCatalog) {
+                        window.AccessLeaseCatalog.loadCatalog();
+                    } else if (targetViewId === 'view-requests' && window.AccessLeaseRequests) {
                         window.AccessLeaseRequests.loadRequestsTable();
                     } else if (targetViewId === 'view-approvals' && window.AccessLeaseRequests) {
                         window.AccessLeaseRequests.loadApprovalsTable();

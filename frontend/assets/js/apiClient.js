@@ -244,13 +244,71 @@
         // ---------------------------------------------------------------------
         // Access Request & Catalog Governance API Convenience Methods
         // ---------------------------------------------------------------------
-        async listCatalogResources() {
-            return this.get('/api/catalog/resources');
+        async listCatalogResources(params = {}) {
+            const query = new URLSearchParams();
+            for (const [k, v] of Object.entries(params)) {
+                if (v !== undefined && v !== null && v !== '') {
+                    query.set(k, String(v));
+                }
+            }
+            const qStr = query.toString();
+            return this.get(`/api/catalog/resources${qStr ? '?' + qStr : ''}`);
         }
 
-        async listResourceEntitlements(resourceId) {
+        async getCatalogResource(resourceId) {
+            if (!resourceId) throw new Error('Resource ID is required.');
+            return this.get(`/api/catalog/resources/${encodeURIComponent(resourceId)}`);
+        }
+
+        async createCatalogResource(payload) {
+            return this.post('/api/catalog/resources', payload);
+        }
+
+        async updateCatalogResource(resourceId, payload) {
+            if (!resourceId) throw new Error('Resource ID is required.');
+            return this.put(`/api/catalog/resources/${encodeURIComponent(resourceId)}`, payload);
+        }
+
+        async setCatalogResourceStatus(resourceId, isActive) {
+            if (!resourceId) throw new Error('Resource ID is required.');
+            return this.patch(`/api/catalog/resources/${encodeURIComponent(resourceId)}/status`, { isActive });
+        }
+
+        async assignCatalogResourceOwner(resourceId, payload) {
+            if (!resourceId) throw new Error('Resource ID is required.');
+            return this.post(`/api/catalog/resources/${encodeURIComponent(resourceId)}/owners`, payload);
+        }
+
+        async removeCatalogResourceOwner(resourceId, ownerUserId) {
+            if (!resourceId || !ownerUserId) throw new Error('Resource ID and Owner User ID are required.');
+            return this.delete(`/api/catalog/resources/${encodeURIComponent(resourceId)}/owners/${encodeURIComponent(ownerUserId)}`);
+        }
+
+        async listResourceEntitlements(resourceId, params = {}) {
             if (!resourceId) throw new Error('Resource ID is required to fetch entitlements.');
-            return this.get(`/api/catalog/resources/${encodeURIComponent(resourceId)}/entitlements`);
+            const query = new URLSearchParams();
+            for (const [k, v] of Object.entries(params)) {
+                if (v !== undefined && v !== null && v !== '') {
+                    query.set(k, String(v));
+                }
+            }
+            const qStr = query.toString();
+            return this.get(`/api/catalog/resources/${encodeURIComponent(resourceId)}/entitlements${qStr ? '?' + qStr : ''}`);
+        }
+
+        async createResourceEntitlement(resourceId, payload) {
+            if (!resourceId) throw new Error('Resource ID is required.');
+            return this.post(`/api/catalog/resources/${encodeURIComponent(resourceId)}/entitlements`, payload);
+        }
+
+        async updateResourceEntitlement(entitlementId, payload) {
+            if (!entitlementId) throw new Error('Entitlement ID is required.');
+            return this.put(`/api/catalog/entitlements/${encodeURIComponent(entitlementId)}`, payload);
+        }
+
+        async setResourceEntitlementStatus(entitlementId, isActive) {
+            if (!entitlementId) throw new Error('Entitlement ID is required.');
+            return this.patch(`/api/catalog/entitlements/${encodeURIComponent(entitlementId)}/status`, { isActive });
         }
 
         async createAccessRequest(payload) {
