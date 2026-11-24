@@ -81,6 +81,11 @@ const {
     getReviewItems,
     submitReviewDecision
 } = require('./functions/reviews');
+const {
+    listAuditEvents,
+    getAuditEventById,
+    getAuditStats
+} = require('./functions/audit');
 const { getAnalyticsSummary } = require('./functions/analytics');
 const { staticFrontendHandler } = require('./functions/staticFrontend');
 const env = require('./config/environment');
@@ -623,6 +628,30 @@ app.http('getAnalyticsSummary', {
     authLevel: 'anonymous',
     route: 'api/analytics/summary',
     handler: getAnalyticsSummary
+});
+
+// 48. GET /api/audit/events - Immutable audit ledger with filtering and pagination
+app.http('listAuditEvents', {
+    methods: ['GET'],
+    authLevel: 'anonymous',
+    route: 'api/audit/events',
+    handler: listAuditEvents
+});
+
+// 49. GET /api/audit/events/{id} - Audit event details and cryptographic payload
+app.http('getAuditEventById', {
+    methods: ['GET'],
+    authLevel: 'anonymous',
+    route: 'api/audit/events/{id}',
+    handler: getAuditEventById
+});
+
+// 50. GET /api/audit/stats - Aggregated audit and compliance metrics
+app.http('getAuditStats', {
+    methods: ['GET'],
+    authLevel: 'anonymous',
+    route: 'api/audit/stats',
+    handler: getAuditStats
 });
 
 // 51. Static Frontend Catch-All Handler (Vanilla JS SPA + Static Assets)

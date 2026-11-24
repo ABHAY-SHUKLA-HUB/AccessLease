@@ -338,6 +338,29 @@
             if (!stepId) throw new Error('Approval step ID is required.');
             return this.post(`/api/approvals/${encodeURIComponent(stepId)}/decision`, decisionPayload);
         }
+
+        // ---------------------------------------------------------------------
+        // Audit & Compliance Trail API Methods
+        // ---------------------------------------------------------------------
+        async listAuditEvents(params = {}) {
+            const query = new URLSearchParams();
+            for (const [k, v] of Object.entries(params)) {
+                if (v !== undefined && v !== null && v !== '') {
+                    query.set(k, String(v));
+                }
+            }
+            const qStr = query.toString();
+            return this.get(`/api/audit/events${qStr ? '?' + qStr : ''}`);
+        }
+
+        async getAuditEvent(eventId) {
+            if (!eventId) throw new Error('Event ID is required.');
+            return this.get(`/api/audit/events/${encodeURIComponent(eventId)}`);
+        }
+
+        async getAuditStats() {
+            return this.get('/api/audit/stats');
+        }
     }
 
     // Export singleton instance

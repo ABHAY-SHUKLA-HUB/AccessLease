@@ -95,6 +95,18 @@ describe('Integration: Access Request Creation & Grant Activation Lifecycle', ()
             .input('engId', testEngagement.engagement_id)
             .input('entId', testEntitlement.entitlement_id)
             .query(`
+                DELETE FROM dbo.review_items
+                WHERE grant_id IN (SELECT grant_id FROM dbo.access_grants WHERE contractor_engagement_id = @engId AND entitlement_id = @entId);
+
+                DELETE FROM dbo.orphan_access_findings
+                WHERE grant_id IN (SELECT grant_id FROM dbo.access_grants WHERE contractor_engagement_id = @engId AND entitlement_id = @entId);
+
+                DELETE FROM dbo.revocation_jobs
+                WHERE grant_id IN (SELECT grant_id FROM dbo.access_grants WHERE contractor_engagement_id = @engId AND entitlement_id = @entId);
+
+                DELETE FROM dbo.provisioning_jobs
+                WHERE grant_id IN (SELECT grant_id FROM dbo.access_grants WHERE contractor_engagement_id = @engId AND entitlement_id = @entId);
+
                 DELETE FROM dbo.access_grants
                 WHERE contractor_engagement_id = @engId AND entitlement_id = @entId;
 

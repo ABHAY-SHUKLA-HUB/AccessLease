@@ -135,6 +135,8 @@ function setupNavigation() {
                         window.AccessLeaseOrphanFindings.loadFindings();
                     } else if (targetViewId === 'view-reviews' && window.AccessLeaseReviews) {
                         window.AccessLeaseReviews.loadReviews();
+                    } else if (targetViewId === 'view-audit' && window.AccessLeaseAudit) {
+                        window.AccessLeaseAudit.loadAuditTrail();
                     } else if (targetViewId === 'view-users' && window.AccessLeaseUsersModule) {
                         window.AccessLeaseUsersModule.loadUsers();
                     }

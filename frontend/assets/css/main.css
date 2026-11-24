@@ -98,13 +98,16 @@ html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    height: 100%;
+    overflow: hidden;
 }
 
 body {
     font-family: var(--font-family-base);
     background-color: var(--bg-canvas);
     color: var(--text-primary);
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
@@ -132,8 +135,8 @@ code, pre, kbd {
     color: var(--text-inverse);
     height: var(--header-height);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    position: sticky;
-    top: 0;
+    position: relative;
+    flex-shrink: 0;
     z-index: 100;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
@@ -307,11 +310,13 @@ code, pre, kbd {
 .app-layout {
     display: flex;
     flex: 1;
+    height: calc(100vh - var(--header-height));
+    max-height: calc(100vh - var(--header-height));
     max-width: var(--max-content-width);
     width: 100%;
     margin: 0 auto;
     position: relative;
-    align-items: flex-start;
+    overflow: hidden;
 }
 
 .sidebar-backdrop {
@@ -332,11 +337,8 @@ code, pre, kbd {
     flex-direction: column;
     padding: 1.25rem 0.75rem;
     flex-shrink: 0;
-    position: sticky;
-    top: var(--header-height);
-    height: calc(100vh - var(--header-height));
+    height: 100%;
     overflow-y: auto;
-    align-self: flex-start;
 }
 
 .app-sidebar::-webkit-scrollbar {
@@ -500,14 +502,19 @@ code, pre, kbd {
 .app-main {
     flex: 1;
     min-width: 0;
-    padding: 1.5rem 2rem;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1.5rem 2rem 2.5rem;
     background-color: var(--bg-canvas);
-    min-height: calc(100vh - var(--header-height));
+    display: flex;
+    flex-direction: column;
 }
 
 .authenticated-shell {
     display: flex;
     flex-direction: column;
+    flex: 1;
 }
 
 .workspace-view {
@@ -2551,12 +2558,14 @@ code, pre, kbd {
 
 /* Application Footer */
 .app-footer {
-    background-color: #ffffff;
+    background-color: transparent;
     border-top: 1px solid var(--border-default);
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.5rem;
     text-align: center;
     font-size: 0.775rem;
     color: var(--text-muted);
+    margin-top: auto;
+    flex-shrink: 0;
 }
 
 /* --------------------------------------------------------------------------

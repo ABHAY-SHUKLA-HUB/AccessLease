@@ -25,6 +25,35 @@ const {
 } = require('../utils/errors');
 const logger = require('../utils/logger');
 
+/**
+ * Detects whether two user profiles represent the same physical person.
+ * Checks GUID, exact email, normalized display name tokens, and username prefixes.
+ */
+function isSamePerson(userA, userB) {
+    if (!userA || !userB) return false;
+    // 1. Same database user GUID
+    if (userA.user_id && userB.user_id && userA.user_id.toLowerCase() === userB.user_id.toLowerCase()) {
+        return true;
+    }
+    // 2. Same email address
+    if (userA.email && userB.email && userA.email.trim().toLowerCase() === userB.email.trim().toLowerCase()) {
+        return true;
+    }
+    // 3. Normalized display name comparison (stripping punctuation and whitespace)
+    const nameA = (userA.display_name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const nameB = (userB.display_name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (nameA && nameB && nameA === nameB && nameA.length > 2) {
+        return true;
+    }
+    // 4. Same personal email prefix across different domains (e.g. abhay.shukla@... vs abhay.shukla@...)
+    const emailPrefixA = (userA.email || '').split('@')[0].trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const emailPrefixB = (userB.email || '').split('@')[0].trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (emailPrefixA && emailPrefixB && emailPrefixA === emailPrefixB && emailPrefixA.length > 3) {
+        return true;
+    }
+    return false;
+}
+
 class RequestWorkflowService {
     /**
      * Lists active catalogue resources available for requesting.
@@ -165,22 +194,23 @@ class RequestWorkflowService {
         }
 
         // SoD Check: Requester cannot be sponsor
-        if (sponsorUserId.toLowerCase() === targetContractorUserId.toLowerCase()) {
-            throw new ForbiddenError('Separation of Duties violation: Requester cannot sponsor their own engagement.', 'ERR_SELF_APPROVAL_FORBIDDEN');
+        if (isSamePerson(targetContractor, sponsorUser)) {
+            throw new ForbiddenError('Separation of Duties violation: Requester cannot sponsor their own engagement, even with a secondary account.', 'ERR_SELF_APPROVAL_FORBIDDEN');
         }
 
         // Stage 2 Approver: Resource Owner from dbo.resource_owners
-        // SoD Check: Must be an independent individual (neither requester nor business sponsor)
+        // SoD Check: Must be a genuinely different individual (neither requester nor business sponsor)
         const owners = await resourceRepository.getResourceOwners(resource.resource_id);
-        const eligibleOwner = owners.find(o =>
-            o.owner_user_id.toLowerCase() !== targetContractorUserId.toLowerCase() &&
-            o.owner_user_id.toLowerCase() !== sponsorUserId.toLowerCase()
-        );
+        const ownerUsers = await Promise.all(owners.map(o => userRepository.findUserById(o.owner_user_id)));
+        const eligibleOwner = owners.find((o, idx) => {
+            const oUser = ownerUsers[idx];
+            return !isSamePerson(oUser, targetContractor) && !isSamePerson(oUser, sponsorUser);
+        });
 
         if (!eligibleOwner) {
-            if (owners.some(o => o.owner_user_id.toLowerCase() === sponsorUserId.toLowerCase())) {
+            if (ownerUsers.some(oUser => isSamePerson(oUser, sponsorUser))) {
                 throw new ForbiddenError(
-                    'Separation of Duties violation: The business sponsor cannot also serve as the resource owner for this access request. Independent multi-stage approval is required.',
+                    'Separation of Duties violation: Resource Owner and Business Sponsor must be genuinely different individuals, not a second account belonging to the same person. Independent multi-stage approval is required.',
                     'ERR_DUAL_APPROVAL_FORBIDDEN'
                 );
             }
@@ -415,8 +445,9 @@ class RequestWorkflowService {
             }
 
             // Guardrail 4: Separation of Duties (SoD)
-            // A requester MUST NEVER approve their own access request under any circumstance
-            if (request.requested_by_user_id.toLowerCase() === user.user_id.toLowerCase()) {
+            // A requester MUST NEVER approve their own access request under any circumstance (even using another account)
+            const requesterUser = await userRepository.findUserById(request.requested_by_user_id);
+            if (isSamePerson(requesterUser, user)) {
                 // Record security audit event outside the failing transaction so it is permanently logged
                 await auditRepository.createAuditEvent({
                     eventCategory: 'APPROVAL',
@@ -434,25 +465,26 @@ class RequestWorkflowService {
                 });
 
                 throw new ForbiddenError(
-                    'Separation of Duties violation: The creator of an access request cannot approve it.',
+                    'Separation of Duties violation: The creator of an access request cannot approve it, even using a secondary account.',
                     'ERR_SELF_APPROVAL_FORBIDDEN'
                 );
             }
 
             // Guardrail 4b: Dual-Stage SoD Enforcement
-            // The same individual cannot unintentionally satisfy multiple mandatory approval stages
+            // Genuinely different persons must satisfy each stage; no single individual can satisfy multiple stages
             const priorDecidersResult = await transaction.request()
                 .input('requestId', sql.UniqueIdentifier, request.request_id)
                 .query(`
-                    SELECT actor_user_id
-                    FROM dbo.audit_events
-                    WHERE entity_id = @requestId
-                      AND event_category = 'APPROVAL'
-                      AND event_action IN ('STEP_APPROVED', 'REQUEST_APPROVED');
+                    SELECT ae.actor_user_id, u.display_name, u.email
+                    FROM dbo.audit_events ae
+                    LEFT JOIN dbo.users u ON ae.actor_user_id = u.user_id
+                    WHERE ae.entity_id = @requestId
+                      AND ae.event_category = 'APPROVAL'
+                      AND ae.event_action IN ('STEP_APPROVED', 'REQUEST_APPROVED');
                 `);
 
             const hasApprovedPriorStage = priorDecidersResult.recordset.some(
-                r => r.actor_user_id && r.actor_user_id.toLowerCase() === user.user_id.toLowerCase()
+                r => isSamePerson({ user_id: r.actor_user_id, display_name: r.display_name, email: r.email }, user)
             );
 
             if (hasApprovedPriorStage) {
@@ -472,7 +504,7 @@ class RequestWorkflowService {
                 });
 
                 throw new ForbiddenError(
-                    'Separation of Duties violation: An individual who approved a prior stage cannot satisfy subsequent approval stages on the same request.',
+                    'Separation of Duties violation: Resource Owner and Business Sponsor separation requires a genuinely different person. An individual who approved a prior stage cannot satisfy subsequent approval stages on the same request.',
                     'ERR_DUAL_APPROVAL_FORBIDDEN'
                 );
             }
