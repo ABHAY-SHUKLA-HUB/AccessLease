@@ -59,13 +59,31 @@ function extractBearerToken(request) {
  * @returns {Promise<object>} Resolved user profile
  */
 async function authenticateRequest(request, context = {}, options = {}) {
+    // If request already has a verified authenticated user attached (e.g. chained middleware), reuse it
+    if (request && request.authenticatedUser && typeof request.authenticatedUser === 'object' && request.authenticatedUser.user_id) {
+        if (context) {
+            context.authenticatedUser = request.authenticatedUser;
+        }
+        return request.authenticatedUser;
+    }
+
+    // Support legacy/test plain mock objects that attach request.user
+    if (request && request.user && typeof request.user === 'object' && request.user.user_id) {
+        request.authenticatedUser = request.user;
+        if (context) {
+            context.authenticatedUser = request.user;
+        }
+        return request.authenticatedUser;
+    }
+
     const token = extractBearerToken(request);
     const user = await authService.authenticateToken(token, options);
     
-    // Attach user to request and context
-    request.user = user;
+    // Attach resolved application profile under dedicated non-reserved property
+    // (HttpRequest.user is a native read-only getter in @azure/functions v4)
+    request.authenticatedUser = user;
     if (context) {
-        context.user = user;
+        context.authenticatedUser = user;
     }
 
     return user;

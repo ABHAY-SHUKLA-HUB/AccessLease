@@ -17,12 +17,18 @@ const SENSITIVE_KEYS = new Set([
     'connectionstring',
     'azure_storage_connection_string',
     'key',
-    'account_key'
+    'account_key',
+    'private_key',
+    'github_app_private_key',
+    'privatekey',
+    'app_jwt',
+    'installation_token'
 ]);
 
 function sanitizeValue(key, value) {
     if (value === null || value === undefined) return value;
-    if (SENSITIVE_KEYS.has(String(key).toLowerCase())) {
+    const lowerKey = String(key).toLowerCase();
+    if (SENSITIVE_KEYS.has(lowerKey) || lowerKey.includes('private_key') || lowerKey.includes('privatekey')) {
         return '[REDACTED_SECRET]';
     }
     if (typeof value === 'object' && !Array.isArray(value)) {
@@ -65,16 +71,40 @@ const logger = {
     },
 
     error(message, error = null, context = {}) {
+        let errObj = null;
+        let ctxObj = context;
+
+        if (error instanceof Error) {
+            errObj = {
+                name: error.name,
+                message: error.message,
+                code: error.code
+            };
+        } else if (error && typeof error === 'object') {
+            if (error.name || error.message || error.code) {
+                errObj = {
+                    name: error.name || 'Error',
+                    message: error.message || String(error),
+                    code: error.code
+                };
+            } else if (error.error) {
+                errObj = {
+                    name: 'Error',
+                    message: String(error.error)
+                };
+                const { error: _, ...rest } = error;
+                ctxObj = { ...rest, ...ctxObj };
+            } else {
+                ctxObj = { ...error, ...ctxObj };
+            }
+        }
+
         const payload = {
             level: 'ERROR',
             timestamp: new Date().toISOString(),
             message,
-            error: error ? {
-                name: error.name,
-                message: error.message,
-                code: error.code
-            } : null,
-            context: sanitizeObject(context)
+            error: errObj,
+            context: sanitizeObject(ctxObj)
         };
         console.error(JSON.stringify(payload));
     },

@@ -1,0 +1,22 @@
+# Azure Functions deployment ignore file
+# Exclude test files, local development tooling, and development configuration
+
+tests/
+scripts/
+.env
+.env.*
+*.env
+local.settings.json
+.vscode/
+*.log
+coverage/
+.nyc_output/
+*.md
+
+# RETAINED FOR RUNTIME (DO NOT IGNORE):
+# host.json
+# package.json
+# src/
+# public/
+# node_modules/
+

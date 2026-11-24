@@ -7,9 +7,10 @@
     "start": "node scripts/start-local.js",
     "start:local": "node scripts/start-local.js",
     "start:func": "func start",
-    "test": "node --test tests/**/*.test.js",
+    "stage:frontend": "node -e \"const fs = require('fs'); const path = require('path'); const src = path.resolve(__dirname, '../frontend'); const dest = path.resolve(__dirname, 'public'); fs.rmSync(dest, { recursive: true, force: true }); fs.cpSync(src, dest, { recursive: true }); console.log('Staged frontend to backend/public');\"",
+    "test": "node --test --test-concurrency=1 tests/**/*.test.js",
     "test:unit": "node --test tests/unit/**/*.test.js",
-    "test:integration": "node --test tests/integration/**/*.test.js"
+    "test:integration": "node --test --test-concurrency=1 tests/integration/**/*.test.js"
   },
   "keywords": [
     "accesslease",
@@ -23,6 +24,7 @@
   "private": true,
   "dependencies": {
     "@azure/functions": "^4.6.0",
+    "@azure/identity": "^4.5.0",
     "dotenv": "^16.4.7",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.1.0",
@@ -30,5 +32,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "azurite": "^3.37.0"
   }
 }

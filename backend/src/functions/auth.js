@@ -20,7 +20,7 @@ const logger = require('../utils/logger');
  * @returns {Promise<object>} Azure Functions HTTP response
  */
 async function getAuthMeHandler(request, context) {
-    const user = request.user;
+    const user = request.authenticatedUser || request.user;
     const correlationId = context && context.invocationId ? context.invocationId : undefined;
 
     logger.info('Protected /api/auth/me accessed by authenticated user', {
@@ -43,7 +43,8 @@ async function getAuthMeHandler(request, context) {
                     user_type: user.user_type,
                     department: user.department,
                     is_active: user.is_active,
-                    roles: user.roles
+                    roles: user.roles,
+                    permissions: user.permissions || []
                 },
                 session: {
                     authenticated: true,

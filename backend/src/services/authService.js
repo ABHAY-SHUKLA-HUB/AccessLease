@@ -5,6 +5,7 @@
 
 const tokenUtils = require('../utils/tokenUtils');
 const userRepository = require('../repositories/userRepository');
+const { getEffectivePermissions } = require('../security/permissionPolicy');
 const { UnauthorizedError, ForbiddenError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
@@ -65,6 +66,9 @@ async function authenticateToken(token, options = {}) {
     // 5. Fetch assigned system roles
     const roles = await userRepository.getUserRoles(user.user_id);
 
+    // Compute effective authorization permissions
+    const permissions = Array.from(getEffectivePermissions(roles));
+
     // 6. Return sanitized application profile (Strictly NO secrets, tokens, or hashes)
     return {
         user_id: user.user_id,
@@ -81,9 +85,11 @@ async function authenticateToken(token, options = {}) {
             role_code: r.role_code,
             role_name: r.role_name
         })),
+        permissions,
         token_metadata: {
             oid: verifiedClaims.oid,
             tid: verifiedClaims.tid,
+            auth_provider: 'Microsoft Entra ID',
             expires_at: verifiedClaims.expiresAt
         }
     };

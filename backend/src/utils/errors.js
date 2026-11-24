@@ -16,8 +16,8 @@ class AppError extends Error {
 }
 
 class ValidationError extends AppError {
-    constructor(message = 'Validation failed', details = []) {
-        super(message, 400, 'ERR_VALIDATION_FAILED', details);
+    constructor(message = 'Validation failed', details = [], code = 'ERR_VALIDATION_FAILED') {
+        super(message, 400, code, details);
     }
 }
 
@@ -36,8 +36,8 @@ class NotFoundError extends AppError {
 }
 
 class ConflictError extends AppError {
-    constructor(message = 'Resource state conflict') {
-        super(message, 409, 'ERR_CONFLICT');
+    constructor(message = 'Resource state conflict', code = 'ERR_CONFLICT') {
+        super(message, 409, code);
     }
 }
 
@@ -53,6 +53,21 @@ class ForbiddenError extends AppError {
     }
 }
 
+class ConfigurationError extends AppError {
+    constructor(message = 'Service configuration error', details = [], code = 'ERR_CONFIGURATION_INVALID') {
+        super(message, 500, code, details);
+    }
+}
+
+class ConnectorError extends AppError {
+    constructor(message = 'External connector error', statusCode = 502, code = 'ERR_CONNECTOR_FAILED', details = {}, isRetryable = false) {
+        super(message, statusCode, code, details);
+        this.isRetryable = isRetryable;
+        this.category = details.category || 'CONNECTOR_ERROR';
+        this.retryAfterSeconds = details.retryAfterSeconds || null;
+    }
+}
+
 module.exports = {
     AppError,
     ValidationError,
@@ -60,6 +75,8 @@ module.exports = {
     NotFoundError,
     ConflictError,
     UnauthorizedError,
-    ForbiddenError
+    ForbiddenError,
+    ConfigurationError,
+    ConnectorError
 };
 

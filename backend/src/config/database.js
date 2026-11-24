@@ -59,15 +59,16 @@ function resolveLocalDbPipe(serverTarget) {
 }
 
 /**
- * Constructs driver connection options based on environment variables.
+ * Constructs driver connection options based on environment variables and selected authentication mode.
+ * Supports:
+ * - 'localdb': Windows LocalDB dynamic named pipe (integrated security)
+ * - 'sql-password': Standard SQL authentication using username/password
+ * - 'azure-identity': Microsoft Entra System-Assigned Managed Identity (zero secrets, dynamic token acquisition)
+ * 
  * @returns {object} mssql Configuration Object
  */
 function buildSqlConfig() {
-    const isLocalDb = env.SQL_SERVER.toLowerCase().includes('(localdb)') || 
-                      env.SQL_SERVER.toLowerCase().includes('localdb#') ||
-                      env.SQL_SERVER.toLowerCase().startsWith('np:');
-
-    const pipePath = isLocalDb ? resolveLocalDbPipe(env.SQL_SERVER) : null;
+    const authMode = env.SQL_AUTH_MODE;
 
     const baseConfig = {
         database: env.SQL_DATABASE,
@@ -85,28 +86,72 @@ function buildSqlConfig() {
         }
     };
 
-    if (pipePath) {
+    if (authMode === 'localdb') {
         // LocalDB via Named Pipe (Windows Local Environment)
+        const pipePath = resolveLocalDbPipe(env.SQL_SERVER);
         logger.info('Configuring SQL driver via Windows Named Pipe for LocalDB');
         baseConfig.server = 'localhost';
         baseConfig.options.encrypt = false;
         baseConfig.options.trustServerCertificate = true;
-        baseConfig.options.connector = (opts, lookup, signal) => {
-            return new Promise((resolve, reject) => {
-                const socket = net.connect(pipePath);
-                socket.on('error', reject);
-                socket.on('connect', () => resolve(socket));
-            });
+
+        if (pipePath) {
+            baseConfig.options.connector = (opts, lookup, signal) => {
+                return new Promise((resolve, reject) => {
+                    const socket = net.connect(pipePath);
+                    socket.on('error', reject);
+                    socket.on('connect', () => resolve(socket));
+                });
+            };
+        }
+        return baseConfig;
+    }
+
+    if (authMode === 'azure-identity') {
+        // Azure SQL Database via Microsoft Entra System-Assigned Managed Identity
+        logger.info('Configuring SQL driver via Microsoft Entra Managed Identity', {
+            server: env.SQL_SERVER,
+            database: env.SQL_DATABASE,
+            authType: 'azure-active-directory-default'
+        });
+
+        baseConfig.server = env.SQL_SERVER;
+        baseConfig.port = env.SQL_PORT;
+        baseConfig.options.encrypt = true;
+        baseConfig.options.trustServerCertificate = env.SQL_TRUST_SERVER_CERTIFICATE;
+
+        // Strictly guarantee no SQL credentials are set
+        delete baseConfig.user;
+        delete baseConfig.password;
+
+        // Tedious AAD authentication configuration
+        // Tedious uses DefaultAzureCredential from @azure/identity to authenticate
+        // against the Azure IMDS / Managed Identity endpoint at connection handshake time.
+        // Tokens are acquired and refreshed dynamically per connection without static caching.
+        const authOptions = {};
+        if (env.AZURE_CLIENT_ID) {
+            authOptions.clientId = env.AZURE_CLIENT_ID;
+        }
+
+        baseConfig.authentication = {
+            type: 'azure-active-directory-default',
+            options: authOptions
         };
-    } else {
-        // Standard TCP/IP (Azure SQL Database or Remote SQL Server)
+
+        return baseConfig;
+    }
+
+    if (authMode === 'sql-password') {
+        // Standard TCP/IP (Local or Remote SQL Server with SQL Authentication)
         baseConfig.server = env.SQL_SERVER;
         baseConfig.port = env.SQL_PORT;
         baseConfig.user = env.SQL_USER;
         baseConfig.password = env.SQL_PASSWORD;
+        return baseConfig;
     }
 
-    return baseConfig;
+    throw new DatabaseError(
+        `Unsupported SQL authentication mode: "${authMode}". Supported modes: 'localdb', 'sql-password', 'azure-identity'.`
+    );
 }
 
 /**
@@ -136,6 +181,7 @@ async function getPool() {
             .then(pool => {
                 logger.info('Database connection pool established successfully', {
                     database: env.SQL_DATABASE,
+                    authMode: env.SQL_AUTH_MODE,
                     poolMax: env.SQL_POOL_MAX,
                     poolMin: env.SQL_POOL_MIN
                 });
@@ -202,6 +248,32 @@ async function query(queryText, params = {}) {
 }
 
 /**
+ * Executes a callback within an isolated database transaction.
+ * Automatically commits if callback succeeds; rolls back on error.
+ * 
+ * @param {function(sql.Transaction): Promise<any>} callback Async function receiving transaction
+ * @returns {Promise<any>}
+ */
+async function withTransaction(callback) {
+    const pool = await getPool();
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    try {
+        const result = await callback(transaction);
+        await transaction.commit();
+        return result;
+    } catch (err) {
+        try {
+            await transaction.rollback();
+        } catch (rollbackErr) {
+            logger.warn('Error during transaction rollback', { error: rollbackErr.message });
+        }
+        throw err;
+    }
+}
+
+/**
  * Closes the active connection pool cleanly.
  * Useful for graceful shutdown and isolated test teardown.
  * @returns {Promise<void>}
@@ -224,6 +296,7 @@ module.exports = {
     getPool,
     checkConnection,
     query,
+    withTransaction,
     closePool,
     buildSqlConfig,
     resolveLocalDbPipe

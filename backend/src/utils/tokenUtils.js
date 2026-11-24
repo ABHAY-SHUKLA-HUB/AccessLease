@@ -34,6 +34,27 @@ function getJwksClient() {
     if (!jwksUri) {
         return null;
     }
+
+    // Security: Ensure JWKS endpoint strictly points to trusted Microsoft Entra ID HTTPS endpoints
+    try {
+        const parsed = new URL(jwksUri);
+        const trustedHosts = ['login.microsoftonline.com', 'sts.windows.net'];
+        const isTrustedHost = trustedHosts.some(host => 
+            parsed.hostname.toLowerCase() === host || parsed.hostname.toLowerCase().endsWith('.' + host)
+        );
+
+        if (parsed.protocol !== 'https:' || !isTrustedHost) {
+            logger.error('Security alert: JWKS URI directed to untrusted host', { uri: jwksUri, host: parsed.hostname });
+            throw new UnauthorizedError(
+                'Untrusted JWKS endpoint configuration. Entra JWKS URI must use an official Microsoft Entra ID HTTPS endpoint.',
+                'ERR_UNTRUSTED_JWKS_URI'
+            );
+        }
+    } catch (urlErr) {
+        if (urlErr instanceof UnauthorizedError) throw urlErr;
+        throw new UnauthorizedError('Malformed Entra JWKS URI configuration.', 'ERR_UNTRUSTED_JWKS_URI');
+    }
+
     if (!jwksClientInstance || jwksClientInstance.jwksUri !== jwksUri) {
         jwksClientInstance = jwksRsa({
             jwksUri,
@@ -143,11 +164,34 @@ async function validateToken(token, options = {}) {
         );
     }
 
-    // Determine expected audience: env.ENTRA_API_AUDIENCE or options.audience
-    const expectedAudience = options.audience !== undefined ? options.audience : [
-        env.ENTRA_API_AUDIENCE,
-        env.ENTRA_CLIENT_ID
-    ].filter(Boolean);
+    // Determine expected audience for Backend Web API:
+    // Supports verified formats for the Backend Web API registration (e.g. api://<API_CLIENT_ID> and <API_CLIENT_ID>)
+    let expectedAudience;
+    if (options.audience !== undefined) {
+        expectedAudience = Array.isArray(options.audience) ? options.audience : [options.audience];
+    } else {
+        const allowed = [];
+        if (env.ENTRA_API_AUDIENCE) {
+            allowed.push(env.ENTRA_API_AUDIENCE);
+        }
+        if (env.ENTRA_API_CLIENT_ID && !allowed.includes(env.ENTRA_API_CLIENT_ID)) {
+            allowed.push(env.ENTRA_API_CLIENT_ID);
+        }
+        expectedAudience = allowed;
+    }
+
+    // Security Check: Explicitly reject tokens issued for the Frontend SPA registration (e.g. SPA ID tokens)
+    const spaClientId = options.spaClientId || env.ENTRA_SPA_CLIENT_ID;
+    const tokenAud = decoded.payload ? decoded.payload.aud : null;
+    if (spaClientId && tokenAud) {
+        const matchesSpa = Array.isArray(tokenAud) ? tokenAud.includes(spaClientId) : tokenAud === spaClientId;
+        if (matchesSpa && !expectedAudience.includes(spaClientId)) {
+            throw new UnauthorizedError(
+                'Access token rejected: token was issued for the Frontend SPA client, not the Backend Web API.',
+                'ERR_INVALID_AUDIENCE'
+            );
+        }
+    }
 
     // Determine expected issuer: tenant v2.0 or STS v1.0
     const expectedTenant = options.tenantId || env.ENTRA_TENANT_ID;
@@ -200,7 +244,23 @@ async function validateToken(token, options = {}) {
         });
     });
 
-    // Enforce mandatory stable user identity claim: oid (Entra Object ID)
+    // 1. Enforce Tenant Validation: Verify tid claim strictly matches expected tenant
+    if (expectedTenant) {
+        if (!verifiedPayload.tid) {
+            throw new UnauthorizedError(
+                'Access token is missing required tenant identity claim (tid).',
+                'ERR_MISSING_TENANT_ID'
+            );
+        }
+        if (verifiedPayload.tid !== expectedTenant) {
+            throw new UnauthorizedError(
+                `Access token tenant ID (${verifiedPayload.tid}) does not match configured tenant (${expectedTenant}).`,
+                'ERR_INVALID_TENANT_ID'
+            );
+        }
+    }
+
+    // 2. Enforce mandatory stable user identity claim: oid (Entra Object ID)
     const entraObjectId = verifiedPayload.oid || verifiedPayload.sub;
     if (!entraObjectId) {
         throw new UnauthorizedError(
