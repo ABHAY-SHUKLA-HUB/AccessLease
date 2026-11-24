@@ -150,8 +150,10 @@
                     filter.status = this.currentStatusFilter;
                 }
 
-                const res = await window.apiClient.get('/api/requests', filter);
-                this.requestsList = res?.data || [];
+                const res = window.apiClient.listAccessRequests
+                    ? await window.apiClient.listAccessRequests(filter)
+                    : await window.apiClient.get('/api/requests', filter);
+                this.requestsList = res?.data?.requests || res?.data || [];
 
                 if (this.requestsList.length === 0) {
                     wrapper.innerHTML = `
@@ -308,8 +310,10 @@
             try {
                 wrapper.innerHTML = '<div class="table-loading-state">Checking pending approvals queue...</div>';
 
-                const res = await window.apiClient.get('/api/approvals/pending');
-                this.pendingApprovalsList = res?.data || [];
+                const res = window.apiClient.listPendingApprovals
+                    ? await window.apiClient.listPendingApprovals()
+                    : await window.apiClient.get('/api/approvals/pending');
+                this.pendingApprovalsList = res?.data?.pendingApprovals || res?.data || [];
 
                 if (this.pendingApprovalsList.length === 0) {
                     wrapper.innerHTML = `
@@ -413,7 +417,9 @@
 
             try {
                 const fetches = [
-                    window.apiClient.get('/api/catalog/resources'),
+                    window.apiClient.listCatalogResources
+                        ? window.apiClient.listCatalogResources()
+                        : window.apiClient.get('/api/catalog/resources'),
                     window.apiClient.get('/api/engagements?status=ACTIVE')
                 ];
                 if (isAdminOrSponsor) {
@@ -421,7 +427,7 @@
                 }
 
                 const results = await Promise.all(fetches);
-                this.catalogResources = results[0]?.data || [];
+                this.catalogResources = results[0]?.data?.resources || results[0]?.data || [];
                 engagementsList = results[1]?.data?.engagements || results[1]?.data || [];
 
                 if (isAdminOrSponsor && results[2]) {
@@ -657,8 +663,10 @@
                 entitlementSelect.innerHTML = '<option value="">Loading entitlements...</option>';
 
                 try {
-                    const entRes = await window.apiClient.get(`/api/catalog/resources/${resId}/entitlements`);
-                    this.selectedResourceEntitlements = entRes?.data || [];
+                    const entRes = window.apiClient.listResourceEntitlements
+                        ? await window.apiClient.listResourceEntitlements(resId)
+                        : await window.apiClient.get(`/api/catalog/resources/${resId}/entitlements`);
+                    this.selectedResourceEntitlements = entRes?.data?.entitlements || entRes?.data || [];
 
                     if (this.selectedResourceEntitlements.length === 0) {
                         entitlementSelect.innerHTML = '<option value="">No active entitlements found</option>';
@@ -763,14 +771,20 @@
                 submitBtn.textContent = 'Submitting Access Request...';
 
                 try {
-                    await window.apiClient.post('/api/requests', {
+                    const reqPayload = {
                         contractorEngagementId: engagementId,
                         resourceId,
                         entitlementId,
                         requestedStartDate,
                         requestedEndDate,
                         businessJustification
-                    });
+                    };
+
+                    if (window.apiClient.createAccessRequest) {
+                        await window.apiClient.createAccessRequest(reqPayload);
+                    } else {
+                        await window.apiClient.post('/api/requests', reqPayload);
+                    }
 
                     closeModal();
                     await this.loadRequestsTable();
@@ -888,7 +902,9 @@
             closeBtn.addEventListener('click', closeModal);
 
             try {
-                const res = await window.apiClient.get(`/api/requests/${requestId}`);
+                const res = window.apiClient.getAccessRequest
+                    ? await window.apiClient.getAccessRequest(requestId)
+                    : await window.apiClient.get(`/api/requests/${requestId}`);
                 const req = res?.data;
                 if (!req) throw new Error('Request not found');
 
@@ -1155,7 +1171,9 @@
             closeBtn.addEventListener('click', closeModal);
 
             try {
-                const res = await window.apiClient.get(`/api/requests/${requestId}`);
+                const res = window.apiClient.getAccessRequest
+                    ? await window.apiClient.getAccessRequest(requestId)
+                    : await window.apiClient.get(`/api/requests/${requestId}`);
                 const req = res?.data;
                 if (!req) throw new Error('Request not found');
 
@@ -1275,10 +1293,16 @@
                     submitBtn.textContent = 'Processing Decision...';
 
                     try {
-                        await window.apiClient.post(`/api/approvals/${stepId}/decision`, {
+                        const decisionPayload = {
                             decision: selectedDecision,
                             comments
-                        });
+                        };
+
+                        if (window.apiClient.submitApprovalDecision) {
+                            await window.apiClient.submitApprovalDecision(stepId, decisionPayload);
+                        } else {
+                            await window.apiClient.post(`/api/approvals/${stepId}/decision`, decisionPayload);
+                        }
 
                         closeModal();
                         await Promise.all([
@@ -1307,9 +1331,13 @@
             if (!confirmed) return;
 
             try {
-                await window.apiClient.post(`/api/requests/${requestId}/cancel`, {
-                    reason: 'Cancelled by requester via web portal'
-                });
+                if (window.apiClient.cancelAccessRequest) {
+                    await window.apiClient.cancelAccessRequest(requestId, 'Cancelled by requester via web portal');
+                } else {
+                    await window.apiClient.post(`/api/requests/${requestId}/cancel`, {
+                        reason: 'Cancelled by requester via web portal'
+                    });
+                }
                 await this.loadRequestsTable();
             } catch (err) {
                 alert('Failed to cancel request: ' + err.message);

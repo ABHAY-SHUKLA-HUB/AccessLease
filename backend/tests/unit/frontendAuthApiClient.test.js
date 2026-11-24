@@ -94,6 +94,9 @@ function loadScriptsInContext(mockWindow) {
         console: mockWindow.console,
         Headers: globalThis.Headers,
         URL: globalThis.URL,
+        URLSearchParams: globalThis.URLSearchParams,
+        encodeURIComponent: globalThis.encodeURIComponent,
+        FormData: globalThis.FormData || class FormData {},
         fetch: mockWindow.fetch || globalThis.fetch,
         document: {
             getElementById: () => null,
@@ -283,6 +286,201 @@ describe('Unit: Frontend ApiClient (apiClient.js)', () => {
                 return true;
             }
         );
+    });
+
+    test('6b. isPublicEndpoint: correctly classifies catalog endpoints with or without leading slashes and mixed case as protected', () => {
+        loadScriptsInContext(mockWindow);
+        const client = mockWindow.apiClient;
+
+        // Catalog endpoints must be strictly protected regardless of leading slash or casing
+        assert.strictEqual(client.isPublicEndpoint('/api/catalog/resources'), false);
+        assert.strictEqual(client.isPublicEndpoint('api/catalog/resources'), false);
+        assert.strictEqual(client.isPublicEndpoint('/API/CATALOG/RESOURCES'), false);
+        assert.strictEqual(client.isPublicEndpoint('api/catalog/resources?active=true'), false);
+        assert.strictEqual(client.isPublicEndpoint('/api/catalog/resources/res-123/entitlements'), false);
+        assert.strictEqual(client.isPublicEndpoint('api/catalog/resources/res-123/entitlements'), false);
+        assert.strictEqual(client.isPublicEndpoint('/API/catalog/resources/res-123/entitlements'), false);
+    });
+
+    test('6c. Protected request: listCatalogResources propagates Authorization: Bearer <token>', async () => {
+        let capturedUrl = null;
+        let capturedHeaders = null;
+
+        mockWindow.fetch = async (url, options) => {
+            capturedUrl = url;
+            capturedHeaders = options.headers;
+            return {
+                ok: true,
+                status: 200,
+                headers: new Headers({ 'content-type': 'application/json' }),
+                json: async () => ({
+                    success: true,
+                    data: [
+                        { resource_id: 'RES-01', resource_code: 'RES-KUBE', resource_name: 'Kubernetes' }
+                    ]
+                })
+            };
+        };
+
+        loadScriptsInContext(mockWindow);
+        mockWindow.AccessLeaseAuth.getAccessToken = async () => 'catalog-jwt-token-xyz';
+
+        const res = await mockWindow.apiClient.listCatalogResources();
+
+        assert.ok(res.success);
+        assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/catalog/resources');
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer catalog-jwt-token-xyz');
+        assert.strictEqual(capturedHeaders.get('Accept'), 'application/json');
+    });
+
+    test('6d. Protected request: listResourceEntitlements propagates Authorization: Bearer <token> with encoded ID', async () => {
+        let capturedUrl = null;
+        let capturedHeaders = null;
+
+        mockWindow.fetch = async (url, options) => {
+            capturedUrl = url;
+            capturedHeaders = options.headers;
+            return {
+                ok: true,
+                status: 200,
+                headers: new Headers({ 'content-type': 'application/json' }),
+                json: async () => ({
+                    success: true,
+                    data: [
+                        { entitlement_id: 'ENT-01', entitlement_code: 'CLUSTER_ADMIN' }
+                    ]
+                })
+            };
+        };
+
+        loadScriptsInContext(mockWindow);
+        mockWindow.AccessLeaseAuth.getAccessToken = async () => 'entitlements-jwt-token-abc';
+
+        const res = await mockWindow.apiClient.listResourceEntitlements('res-kube-99');
+
+        assert.ok(res.success);
+        assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/catalog/resources/res-kube-99/entitlements');
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer entitlements-jwt-token-abc');
+    });
+
+    test('6e. Token acquisition failure: rethrows explicit error and never silently dispatches unauthenticated request', async () => {
+        let fetchDispatched = false;
+
+        mockWindow.fetch = async () => {
+            fetchDispatched = true;
+            return { ok: true, status: 200, headers: new Headers() };
+        };
+
+        loadScriptsInContext(mockWindow);
+
+        // Simulate token acquisition failure (e.g. popup blocker or interaction rejection)
+        mockWindow.AccessLeaseAuth.getAccessToken = async () => {
+            const err = new Error('Popup window blocked by browser policy.');
+            err.code = 'popup_window_error';
+            throw err;
+        };
+
+        await assert.rejects(
+            async () => {
+                await mockWindow.apiClient.listCatalogResources();
+            },
+            (err) => {
+                assert.strictEqual(err.status, 401);
+                assert.strictEqual(err.code, 'popup_window_error');
+                assert.ok(err.message.includes('Popup window blocked'));
+                return true;
+            }
+        );
+
+        assert.strictEqual(fetchDispatched, false, 'Fetch must never be dispatched when token acquisition throws');
+    });
+
+    test('6f. Protected request: empty or invalid Authorization header triggers token acquisition and attaches valid Bearer', async () => {
+        let capturedHeaders = null;
+
+        mockWindow.fetch = async (url, options) => {
+            capturedHeaders = options.headers;
+            return {
+                ok: true,
+                status: 200,
+                headers: new Headers({ 'content-type': 'application/json' }),
+                json: async () => ({ success: true, data: [] })
+            };
+        };
+
+        loadScriptsInContext(mockWindow);
+        mockWindow.AccessLeaseAuth.getAccessToken = async () => 'acquired-valid-token-123';
+
+        // Call with empty string Authorization header
+        await mockWindow.apiClient.get('/api/catalog/resources', {
+            headers: { 'Authorization': '' }
+        });
+
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer acquired-valid-token-123');
+
+        // Call with 'Bearer ' or 'Bearer null'
+        await mockWindow.apiClient.get('/api/catalog/resources', {
+            headers: { 'Authorization': 'Bearer null' }
+        });
+
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer acquired-valid-token-123');
+    });
+
+    test('6g. Request workflow convenience methods: propagate Bearer token across all lifecycle operations', async () => {
+        let capturedUrl = null;
+        let capturedMethod = null;
+        let capturedHeaders = null;
+
+        mockWindow.fetch = async (url, options) => {
+            capturedUrl = url;
+            capturedMethod = options.method;
+            capturedHeaders = options.headers;
+            return {
+                ok: true,
+                status: 200,
+                headers: new Headers({ 'content-type': 'application/json' }),
+                json: async () => ({ success: true, data: {} })
+            };
+        };
+
+        loadScriptsInContext(mockWindow);
+        mockWindow.AccessLeaseAuth.getAccessToken = async () => 'workflow-auth-token';
+
+        // createAccessRequest
+        await mockWindow.apiClient.createAccessRequest({ resourceId: 'RES-1' });
+        assert.strictEqual(capturedMethod, 'POST');
+        assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/requests');
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer workflow-auth-token');
+
+        // listAccessRequests
+        await mockWindow.apiClient.listAccessRequests({ status: 'PENDING_APPROVAL' });
+        assert.strictEqual(capturedMethod, 'GET');
+        assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/requests?status=PENDING_APPROVAL');
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer workflow-auth-token');
+
+        // getAccessRequest
+        await mockWindow.apiClient.getAccessRequest('REQ-001');
+        assert.strictEqual(capturedMethod, 'GET');
+        assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/requests/REQ-001');
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer workflow-auth-token');
+
+        // cancelAccessRequest
+        await mockWindow.apiClient.cancelAccessRequest('REQ-001', 'Changed requirements');
+        assert.strictEqual(capturedMethod, 'POST');
+        assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/requests/REQ-001/cancel');
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer workflow-auth-token');
+
+        // listPendingApprovals
+        await mockWindow.apiClient.listPendingApprovals();
+        assert.strictEqual(capturedMethod, 'GET');
+        assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/approvals/pending');
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer workflow-auth-token');
+
+        // submitApprovalDecision
+        await mockWindow.apiClient.submitApprovalDecision('STEP-001', { decision: 'APPROVE', comments: 'Approved' });
+        assert.strictEqual(capturedMethod, 'POST');
+        assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/approvals/STEP-001/decision');
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer workflow-auth-token');
     });
 });
 
