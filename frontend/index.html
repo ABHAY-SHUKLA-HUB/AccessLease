@@ -184,7 +184,7 @@
                         <span class="nav-text">Access Reviews</span>
                         <span class="nav-badge nav-badge-active">Active</span>
                     </a>
-                    <a href="#audit" class="nav-link nav-link-disabled" data-view="view-audit" aria-disabled="true" title="Audit & Compliance Trail is scheduled for a future release">
+                    <a href="#audit" id="nav-link-audit" class="nav-link" data-view="view-audit">
                         <span class="nav-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -194,7 +194,7 @@
                             </svg>
                         </span>
                         <span class="nav-text">Audit &amp; Compliance Trail</span>
-                        <span class="nav-badge nav-badge-upcoming">Upcoming</span>
+                        <span class="nav-badge nav-badge-planned">Planned</span>
                     </a>
                 </div>
 
@@ -321,6 +321,184 @@
                                 </div>
                             </div>
                         </details>
+                    </section>
+
+                    <!-- Live Operational Governance KPI Metrics (Database-Driven) -->
+                    <section class="dashboard-section">
+                        <div class="section-header-block">
+                            <h3 class="section-title">Operational Governance Metrics</h3>
+                            <p class="section-subtitle">Real-time posture and volume indicators computed from Microsoft SQL Server database records.</p>
+                        </div>
+
+                        <div class="kpi-grid">
+                            <div class="kpi-card module-nav-btn" data-navigate="view-contractors" style="cursor: pointer;">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-label">Contractors</span>
+                                    <span class="kpi-icon">&#128101;</span>
+                                </div>
+                                <span id="dash-metric-contractors" class="kpi-value">—</span>
+                                <span class="kpi-meta">External Partner Directory</span>
+                            </div>
+
+                            <div class="kpi-card module-nav-btn" data-navigate="view-contractors" style="cursor: pointer;">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-label">Active Engagements</span>
+                                    <span class="kpi-icon">&#128196;</span>
+                                </div>
+                                <span id="dash-metric-engagements" class="kpi-value kpi-success">—</span>
+                                <span class="kpi-meta">Valid SOW Contracts</span>
+                            </div>
+
+                            <div class="kpi-card module-nav-btn" data-navigate="view-requests" style="cursor: pointer;">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-label">Active Leases</span>
+                                    <span class="kpi-icon">&#128273;</span>
+                                </div>
+                                <span id="dash-metric-active-grants" class="kpi-value kpi-success">—</span>
+                                <span class="kpi-meta">Time-Bound Grants</span>
+                            </div>
+
+                            <div class="kpi-card module-nav-btn" data-navigate="view-requests" style="cursor: pointer;">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-label">Pending Requests</span>
+                                    <span class="kpi-icon">&#128221;</span>
+                                </div>
+                                <span id="dash-metric-pending-requests" class="kpi-value kpi-info">—</span>
+                                <span class="kpi-meta">Awaiting Workflow Sign-off</span>
+                            </div>
+
+                            <div class="kpi-card module-nav-btn" data-navigate="view-approvals" style="cursor: pointer;">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-label">Pending Approvals</span>
+                                    <span class="kpi-icon">&#9989;</span>
+                                </div>
+                                <span id="dash-metric-pending-approvals" class="kpi-value kpi-warning">—</span>
+                                <span class="kpi-meta">Queue Decision Required</span>
+                            </div>
+
+                            <div class="kpi-card module-nav-btn" data-navigate="view-analytics" style="cursor: pointer;">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-label">Expiring Soon (7d)</span>
+                                    <span class="kpi-icon">&#9200;</span>
+                                </div>
+                                <span id="dash-metric-expiring-soon" class="kpi-value kpi-warning">—</span>
+                                <span class="kpi-meta">Approaching Boundary</span>
+                            </div>
+
+                            <div class="kpi-card module-nav-btn" data-navigate="view-orphan-findings" style="cursor: pointer;">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-label">Orphan Findings</span>
+                                    <span class="kpi-icon">&#9888;</span>
+                                </div>
+                                <span id="dash-metric-open-orphans" class="kpi-value kpi-danger">—</span>
+                                <span class="kpi-meta">Stale Grants Detected</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Visual Posture Summaries & Exposure Breakdown -->
+                    <section class="dashboard-section">
+                        <div class="visual-charts-grid">
+                            <!-- Chart 1: Orphan Access Exposure by Severity -->
+                            <div class="visual-chart-card">
+                                <div class="chart-header">
+                                    <div>
+                                        <h4 class="chart-title">Orphan Access Exposure</h4>
+                                        <span class="small text-muted">Detected lingering grants by risk severity</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-orphan-findings">View All &rarr;</button>
+                                </div>
+                                
+                                <div class="breakdown-list" style="margin-top: 0.5rem;">
+                                    <div class="breakdown-item item-critical">
+                                        <span class="breakdown-label">Critical Risk</span>
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; max-width: 140px; margin: 0 0.75rem;">
+                                            <div class="progress-bar-container" style="margin: 0;">
+                                                <div id="dash-chart-critical-bar" class="progress-bar-fill" style="background: #dc2626; width: 0%;"></div>
+                                            </div>
+                                        </div>
+                                        <span id="dash-chart-critical-count" class="breakdown-count text-danger">0</span>
+                                    </div>
+                                    <div class="breakdown-item item-high">
+                                        <span class="breakdown-label">High Risk</span>
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; max-width: 140px; margin: 0 0.75rem;">
+                                            <div class="progress-bar-container" style="margin: 0;">
+                                                <div id="dash-chart-high-bar" class="progress-bar-fill" style="background: #ea580c; width: 0%;"></div>
+                                            </div>
+                                        </div>
+                                        <span id="dash-chart-high-count" class="breakdown-count text-warning">0</span>
+                                    </div>
+                                    <div class="breakdown-item item-medium">
+                                        <span class="breakdown-label">Medium Risk</span>
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; max-width: 140px; margin: 0 0.75rem;">
+                                            <div class="progress-bar-container" style="margin: 0;">
+                                                <div id="dash-chart-medium-bar" class="progress-bar-fill" style="background: #d97706; width: 0%;"></div>
+                                            </div>
+                                        </div>
+                                        <span id="dash-chart-medium-count" class="breakdown-count text-warning">0</span>
+                                    </div>
+                                    <div class="breakdown-item item-low">
+                                        <span class="breakdown-label">Low Risk</span>
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; max-width: 140px; margin: 0 0.75rem;">
+                                            <div class="progress-bar-container" style="margin: 0;">
+                                                <div id="dash-chart-low-bar" class="progress-bar-fill" style="background: #059669; width: 0%;"></div>
+                                            </div>
+                                        </div>
+                                        <span id="dash-chart-low-count" class="breakdown-count text-success">0</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chart 2: Deprovisioning & Revocation Health -->
+                            <div class="visual-chart-card">
+                                <div class="chart-header">
+                                    <div>
+                                        <h4 class="chart-title">Revocation Health Pipeline</h4>
+                                        <span class="small text-muted">Deprovisioning execution &amp; verification state</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-offboarding">Manage &rarr;</button>
+                                </div>
+
+                                <div class="breakdown-list" style="margin-top: 0.5rem;">
+                                    <div class="breakdown-item" style="border-left: 3px solid #059669;">
+                                        <span class="breakdown-label">Confirmed Absence</span>
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; max-width: 140px; margin: 0 0.75rem;">
+                                            <div class="progress-bar-container" style="margin: 0;">
+                                                <div id="dash-chart-confirmed-bar" class="progress-bar-fill" style="background: #059669; width: 0%;"></div>
+                                            </div>
+                                        </div>
+                                        <span id="dash-chart-confirmed-count" class="breakdown-count text-success">0</span>
+                                    </div>
+                                    <div class="breakdown-item" style="border-left: 3px solid #d97706;">
+                                        <span class="breakdown-label">In Manual Review</span>
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; max-width: 140px; margin: 0 0.75rem;">
+                                            <div class="progress-bar-container" style="margin: 0;">
+                                                <div id="dash-chart-review-bar" class="progress-bar-fill" style="background: #d97706; width: 0%;"></div>
+                                            </div>
+                                        </div>
+                                        <span id="dash-chart-review-count" class="breakdown-count text-warning">0</span>
+                                    </div>
+                                    <div class="breakdown-item" style="border-left: 3px solid #2563eb;">
+                                        <span class="breakdown-label">Pending Execution</span>
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; max-width: 140px; margin: 0 0.75rem;">
+                                            <div class="progress-bar-container" style="margin: 0;">
+                                                <div id="dash-chart-pending-bar" class="progress-bar-fill" style="background: #2563eb; width: 0%;"></div>
+                                            </div>
+                                        </div>
+                                        <span id="dash-chart-pending-count" class="breakdown-count text-secondary">0</span>
+                                    </div>
+                                    <div class="breakdown-item" style="border-left: 3px solid #dc2626;">
+                                        <span class="breakdown-label">Failed / Action Req.</span>
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; max-width: 140px; margin: 0 0.75rem;">
+                                            <div class="progress-bar-container" style="margin: 0;">
+                                                <div id="dash-chart-failed-bar" class="progress-bar-fill" style="background: #dc2626; width: 0%;"></div>
+                                            </div>
+                                        </div>
+                                        <span id="dash-chart-failed-count" class="breakdown-count text-danger">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </section>
 
                     <!-- Section: Five Core Pillars of Contractor Governance -->
@@ -553,7 +731,7 @@
                             </article>
 
                             <!-- Card 10: Audit & Compliance Trail -->
-                            <article class="module-card module-card-disabled">
+                            <article class="module-card">
                                 <div class="module-card-header">
                                     <div class="module-card-icon-title">
                                         <span class="module-icon" aria-hidden="true">
@@ -561,11 +739,11 @@
                                         </span>
                                         <h4 class="module-name">Audit &amp; Compliance Trail</h4>
                                     </div>
-                                    <span class="nav-badge nav-badge-upcoming">Upcoming</span>
+                                    <span class="nav-badge nav-badge-planned">Planned</span>
                                 </div>
-                                <p class="module-card-desc">Immutable governance audit event ledger, compliance exports, and regulatory examination reporting pipelines.</p>
+                                <p class="module-card-desc">Immutable governance audit event ledger, compliance export packages, and regulatory examination reporting pipelines.</p>
                                 <div class="module-card-footer">
-                                    <span class="module-disabled-note">Database Schema Active (dbo.audit_events) &bull; Planned</span>
+                                    <button type="button" class="btn btn-sm btn-outline module-nav-btn" data-navigate="view-audit">View Roadmap &rarr;</button>
                                 </div>
                             </article>
                         </div>
@@ -1552,14 +1730,111 @@
 
                 <!-- Tab View 7: Audit & Compliance (Scheduled) -->
                 <div id="view-audit" class="workspace-view" style="display: none;">
-                    <section class="content-card">
-                        <span class="nav-badge nav-badge-planned">Upcoming Implementation</span>
-                        <h2>Audit &amp; Compliance Trail</h2>
-                        <p class="lead-text">
-                            Immutable governance logs, access reviews, and compliance export pipelines.
+                    <div class="view-header">
+                        <div>
+                            <h2>Audit &amp; Compliance Trail</h2>
+                            <p class="lead-text">
+                                Centralized cryptographic ledger for continuous audit readiness, regulatory examinations (SOC 2, ISO 27001, SOX), and SIEM integration.
+                            </p>
+                        </div>
+                        <div class="header-actions">
+                            <span class="status-pill status-pill-info">Enterprise Roadmap &bull; Phase 2</span>
+                            <span class="status-pill status-pill-success">Tamper-Evident Storage</span>
+                        </div>
+                    </div>
+
+                    <!-- Feature Preview Architecture Cards -->
+                    <div class="roadmap-grid">
+                        <div class="roadmap-card">
+                            <span class="roadmap-badge">Phase 2 Core</span>
+                            <h3 class="roadmap-title">Cryptographic Audit Event Ledger</h3>
+                            <p class="roadmap-desc">
+                                Tamper-evident transaction logging recording every contractor request, approval decision, grant activation, and deprovisioning event with deterministic SHA-256 verification hashes.
+                            </p>
+                            <ul class="roadmap-features-list">
+                                <li class="roadmap-feature-item">Chained SHA-256 cryptographic transaction verification</li>
+                                <li class="roadmap-feature-item">Immutable append-only storage policy</li>
+                                <li class="roadmap-feature-item">Dual-custody approval cryptographic attestation</li>
+                            </ul>
+                        </div>
+
+                        <div class="roadmap-card">
+                            <span class="roadmap-badge">Compliance Automation</span>
+                            <h3 class="roadmap-title">Regulatory Evidence Export Packages</h3>
+                            <p class="roadmap-desc">
+                                Automated one-click evidence extraction formatted for auditors, external examiners, and compliance certifications with pre-mapped control frameworks.
+                            </p>
+                            <ul class="roadmap-features-list">
+                                <li class="roadmap-feature-item">SOC 2 Type II Trust Services Criteria (CC6.1 - CC6.3)</li>
+                                <li class="roadmap-feature-item">ISO/IEC 27001:2022 Annex A.9 Access Control proofs</li>
+                                <li class="roadmap-feature-item">SOX IT General Controls (ITGC) periodic access reviews</li>
+                            </ul>
+                        </div>
+
+                        <div class="roadmap-card">
+                            <span class="roadmap-badge">Security Operations</span>
+                            <h3 class="roadmap-title">Real-Time SIEM &amp; Lakehouse Streaming</h3>
+                            <p class="roadmap-desc">
+                                Continuous event streaming pipelines feeding identity governance audit events directly into your Security Operations Center (SOC) and enterprise log analytics.
+                            </p>
+                            <ul class="roadmap-features-list">
+                                <li class="roadmap-feature-item">Native Microsoft Sentinel &amp; Azure Event Hub streaming</li>
+                                <li class="roadmap-feature-item">Splunk Cloud HTTP Event Collector (HEC) integration</li>
+                                <li class="roadmap-feature-item">Automated privilege drift &amp; anomalous access alerts</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Security & Architecture Specifications Section -->
+                    <section class="content-card" style="margin-top: 1.5rem;">
+                        <div class="card-header-clean">
+                            <div class="card-header-titles">
+                                <span class="card-eyebrow">Enterprise Security Architecture</span>
+                                <h3 class="card-main-title">Continuous Governance Attestation</h3>
+                            </div>
+                            <span class="status-pill status-pill-success">Active Backend Engine</span>
+                        </div>
+                        <p class="lead-text" style="margin-bottom: 1.25rem;">
+                            AccessLease coordinates all identity lifecycle events through strict Separation of Duties (SoD) and durable state machines.
                         </p>
-                        <div class="module-placeholder-box">
-                            <p><strong>Database Foundation Ready:</strong> <code>dbo.audit_events</code>, <code>dbo.access_reviews</code>, and <code>dbo.review_items</code> are active.</p>
+
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Governance Domain</th>
+                                        <th>Enforcement Mechanism</th>
+                                        <th>Audit Evidence Captured</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Access Request Authorization</strong></td>
+                                        <td>Multi-Stage Approval Pipeline (Sponsor &rarr; Owner &rarr; Security)</td>
+                                        <td>Actor Identity, Decision Timestamp, Cryptographic OID</td>
+                                        <td><span class="status-pill status-pill-success">Active &bull; Enforced</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Lease Expiry &amp; Deprovisioning</strong></td>
+                                        <td>Deterministic Background Lease Expiry Worker</td>
+                                        <td>Revocation Execution ID, Provider Absence Proof</td>
+                                        <td><span class="status-pill status-pill-success">Active &bull; Enforced</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Privilege Drift Detection</strong></td>
+                                        <td>Periodic Orphan Access &amp; Stale Grant Detection Engine</td>
+                                        <td>Detection Scan Run ID, Discrepancy Severity Score</td>
+                                        <td><span class="status-pill status-pill-success">Active &bull; Enforced</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Recertification Campaigns</strong></td>
+                                        <td>Access Review &amp; Attestation Workflow Engine</td>
+                                        <td>Reviewer Decision Notes, Recertification Timestamp</td>
+                                        <td><span class="status-pill status-pill-success">Active &bull; Enforced</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </section>
                 </div>

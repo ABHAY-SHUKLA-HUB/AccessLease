@@ -42,6 +42,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const hasAdmin = user && user.roles && user.roles.some(r => (r.role_code || r) === 'SYSTEM_ADMIN');
                 moduleCardUsers.style.display = hasAdmin ? 'flex' : 'none';
             }
+            if (user) {
+                loadDashboardMetrics();
+            }
         });
 
         await window.AccessLeaseAuth.initialize();
@@ -114,7 +117,9 @@ function setupNavigation() {
                     view.style.display = 'block';
                     
                     // Trigger refresh on dynamic module views
-                    if (targetViewId === 'view-catalog' && window.AccessLeaseCatalog) {
+                    if (targetViewId === 'view-governance-shell') {
+                        loadDashboardMetrics();
+                    } else if (targetViewId === 'view-catalog' && window.AccessLeaseCatalog) {
                         window.AccessLeaseCatalog.loadCatalog();
                     } else if (targetViewId === 'view-requests' && window.AccessLeaseRequests) {
                         window.AccessLeaseRequests.loadRequestsTable();
@@ -209,3 +214,73 @@ function setupMobileSidebar() {
         }
     });
 }
+
+/**
+ * Loads real-time database-driven governance metrics & charts on the Main Dashboard.
+ */
+async function loadDashboardMetrics() {
+    try {
+        if (!window.apiClient) return;
+
+        // Fetch live database metrics
+        const [analyticsRes, contractorsRes] = await Promise.allSettled([
+            window.apiClient.get('/api/analytics/summary'),
+            window.apiClient.get('/api/contractors')
+        ]);
+
+        const metrics = (analyticsRes.status === 'fulfilled' && analyticsRes.value?.data?.metrics) || {};
+        const contractors = (contractorsRes.status === 'fulfilled' && contractorsRes.value?.data?.contractors) || [];
+
+        // Update KPI values
+        const setEl = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = String(val ?? 0);
+        };
+
+        setEl('dash-metric-contractors', contractors.length);
+        setEl('dash-metric-engagements', metrics.activeContractorEngagements ?? 0);
+        setEl('dash-metric-active-grants', metrics.activeAccessGrants ?? 0);
+        setEl('dash-metric-pending-requests', metrics.pendingAccessRequests ?? 0);
+        setEl('dash-metric-pending-approvals', metrics.pendingApprovals ?? 0);
+        setEl('dash-metric-expiring-soon', metrics.expiringGrantsSoon7d ?? 0);
+        setEl('dash-metric-open-orphans', metrics.orphanFindings?.totalOpen ?? 0);
+
+        // Update Orphan Risk Exposure Chart
+        const orphans = metrics.orphanFindings || {};
+        const totalOrphans = Math.max((orphans.totalOpen || 0), 1);
+        setEl('dash-chart-critical-count', orphans.critical ?? 0);
+        setEl('dash-chart-high-count', orphans.high ?? 0);
+        setEl('dash-chart-medium-count', orphans.medium ?? 0);
+        setEl('dash-chart-low-count', orphans.low ?? 0);
+
+        const setBar = (id, count, total) => {
+            const el = document.getElementById(id);
+            if (el) {
+                const pct = count > 0 ? Math.max(Math.round((count / total) * 100), 12) : 0;
+                el.style.width = `${pct}%`;
+            }
+        };
+
+        setBar('dash-chart-critical-bar', orphans.critical || 0, totalOrphans);
+        setBar('dash-chart-high-bar', orphans.high || 0, totalOrphans);
+        setBar('dash-chart-medium-bar', orphans.medium || 0, totalOrphans);
+        setBar('dash-chart-low-bar', orphans.low || 0, totalOrphans);
+
+        // Update Revocation Pipeline Chart
+        const rev = metrics.revocations || {};
+        const totalRev = Math.max(((rev.confirmed || 0) + (rev.manualReview || 0) + (rev.pending || 0) + (rev.failed || 0)), 1);
+        setEl('dash-chart-confirmed-count', rev.confirmed ?? 0);
+        setEl('dash-chart-review-count', rev.manualReview ?? 0);
+        setEl('dash-chart-pending-count', rev.pending ?? 0);
+        setEl('dash-chart-failed-count', rev.failed ?? 0);
+
+        setBar('dash-chart-confirmed-bar', rev.confirmed || 0, totalRev);
+        setBar('dash-chart-review-bar', rev.manualReview || 0, totalRev);
+        setBar('dash-chart-pending-bar', rev.pending || 0, totalRev);
+        setBar('dash-chart-failed-bar', rev.failed || 0, totalRev);
+
+    } catch (err) {
+        console.warn('[AccessLease Main] Failed to compute dashboard metrics:', err.message);
+    }
+}
+

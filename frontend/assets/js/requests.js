@@ -454,7 +454,7 @@
 
             container.innerHTML = `
                 <div class="modal-backdrop" id="modal-new-request">
-                    <div class="modal-dialog" style="max-width: 680px;">
+                    <div class="modal-dialog modal-dialog-lg" style="max-width: 720px;">
                         <div class="modal-header">
                             <div>
                                 <h3 class="modal-title">New Access Lease Request</h3>
@@ -465,98 +465,121 @@
                         <form id="form-new-request" class="modal-body" novalidate>
                             <div id="new-request-error-banner" class="error-banner" style="display: none; margin-bottom: 1rem;"></div>
 
-                            <!-- Contractor & Engagement Section -->
-                            ${!isContractor ? `
-                                <div class="form-row">
-                                    <div class="form-group col-half">
-                                        <label class="form-label required" for="req-contractor-select">Contractor Subject</label>
-                                        <select id="req-contractor-select" class="form-select" required>
-                                            <option value="">-- Select External Contractor --</option>
-                                            ${contractorsList.map(c => `
-                                                <option value="${c.user_id}">
-                                                    ${this.escapeHtml(c.display_name)} (${this.escapeHtml(c.email || c.user_id)})
-                                                </option>
-                                            `).join('')}
-                                        </select>
-                                        <span class="form-help">External identity requiring access lease.</span>
-                                    </div>
-                                    <div class="form-group col-half">
-                                        <label class="form-label required" for="req-engagement-select">Associated Engagement</label>
-                                        <select id="req-engagement-select" class="form-select" required disabled>
-                                            <option value="">-- Select Contractor First --</option>
-                                        </select>
-                                        <span class="form-help">Active engagement defining contract boundary.</span>
-                                    </div>
+                            <!-- Step 1: Contractor & Engagement Section -->
+                            <div class="form-step-section">
+                                <div class="form-step-title">
+                                    <span class="form-step-badge">Step 1</span>
+                                    <span>Contractor &amp; Engagement Scope</span>
                                 </div>
-                            ` : `
+                                ${!isContractor ? `
+                                    <div class="form-row">
+                                        <div class="form-group col-half">
+                                            <label class="form-label required" for="req-contractor-select">Contractor Subject</label>
+                                            <select id="req-contractor-select" class="form-select" required>
+                                                <option value="">-- Select External Contractor --</option>
+                                                ${contractorsList.map(c => `
+                                                    <option value="${c.user_id}">
+                                                        ${this.escapeHtml(c.display_name)} (${this.escapeHtml(c.email || c.user_id)})
+                                                    </option>
+                                                `).join('')}
+                                            </select>
+                                            <span class="form-help">External identity requiring access lease.</span>
+                                        </div>
+                                        <div class="form-group col-half">
+                                            <label class="form-label required" for="req-engagement-select">Associated Engagement</label>
+                                            <select id="req-engagement-select" class="form-select" required disabled>
+                                                <option value="">-- Select Contractor First --</option>
+                                            </select>
+                                            <span class="form-help">Active engagement defining contract boundary.</span>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="form-group">
+                                        <label class="form-label required" for="req-engagement-select">Associated Active Engagement</label>
+                                        <select id="req-engagement-select" class="form-select" required ${engagementsList.length === 0 ? 'disabled' : ''}>
+                                            ${engagementsList.length === 0 ? `
+                                                <option value="">No active engagements found. Active engagement is mandatory.</option>
+                                            ` : `
+                                                <option value="">-- Select Active Engagement --</option>
+                                                ${engagementsList.map(e => `
+                                                    <option value="${e.engagement_id}" data-start="${e.start_date}" data-end="${e.end_date}">
+                                                        ${this.escapeHtml(e.vendor_name || 'Engagement')} — Ref: ${this.escapeHtml(e.contract_reference || 'N/A')} (Active until ${this.formatDate(e.end_date)})
+                                                    </option>
+                                                `).join('')}
+                                            `}
+                                        </select>
+                                        <span class="form-help">Access lease bounds are constrained by your engagement contract term.</span>
+                                    </div>
+                                `}
+                            </div>
+
+                            <!-- Step 2: Resource & Entitlement Selection -->
+                            <div class="form-step-section">
+                                <div class="form-step-title">
+                                    <span class="form-step-badge">Step 2</span>
+                                    <span>Target System &amp; Permission Boundary</span>
+                                </div>
                                 <div class="form-group">
-                                    <label class="form-label required" for="req-engagement-select">Associated Active Engagement</label>
-                                    <select id="req-engagement-select" class="form-select" required ${engagementsList.length === 0 ? 'disabled' : ''}>
-                                        ${engagementsList.length === 0 ? `
-                                            <option value="">No active engagements found. Active engagement is mandatory.</option>
-                                        ` : `
-                                            <option value="">-- Select Active Engagement --</option>
-                                            ${engagementsList.map(e => `
-                                                <option value="${e.engagement_id}" data-start="${e.start_date}" data-end="${e.end_date}">
-                                                    ${this.escapeHtml(e.vendor_name || 'Engagement')} — Ref: ${this.escapeHtml(e.contract_reference || 'N/A')} (Active until ${this.formatDate(e.end_date)})
-                                                </option>
-                                            `).join('')}
-                                        `}
+                                    <label class="form-label required" for="req-resource-select">Target Enterprise Resource</label>
+                                    <select id="req-resource-select" class="form-select" required>
+                                        <option value="">-- Select Enterprise Resource --</option>
+                                        ${this.catalogResources.map(r => `
+                                            <option value="${r.resource_id}" data-max="${r.max_lease_duration_days || 90}" data-risk="${r.risk_level}" data-sec="${r.requires_security_approval ? '1' : '0'}">
+                                                ${this.escapeHtml(r.resource_name)} (${r.resource_code}) — [${r.risk_level} Risk, Max ${r.max_lease_duration_days}d]
+                                            </option>
+                                        `).join('')}
                                     </select>
-                                    <span class="form-help">Access lease bounds are constrained by your engagement contract term.</span>
+                                    <span class="form-help">Select the protected resource system you require access to.</span>
                                 </div>
-                            `}
 
-                            <!-- Resource Selection -->
-                            <div class="form-group">
-                                <label class="form-label required" for="req-resource-select">Target Resource</label>
-                                <select id="req-resource-select" class="form-select" required>
-                                    <option value="">-- Select Enterprise Resource --</option>
-                                    ${this.catalogResources.map(r => `
-                                        <option value="${r.resource_id}" data-max="${r.max_lease_duration_days || 90}" data-risk="${r.risk_level}" data-sec="${r.requires_security_approval ? '1' : '0'}">
-                                            ${this.escapeHtml(r.resource_name)} (${r.resource_code}) — [${r.risk_level} Risk, Max ${r.max_lease_duration_days}d]
-                                        </option>
-                                    `).join('')}
-                                </select>
-                                <span class="form-help">Select the protected resource system you require access to.</span>
-                            </div>
-
-                            <!-- Entitlement Selection -->
-                            <div class="form-group">
-                                <label class="form-label required" for="req-entitlement-select">Requested Entitlement / Role</label>
-                                <select id="req-entitlement-select" class="form-select" required disabled>
-                                    <option value="">-- Select Resource First --</option>
-                                </select>
-                                <span class="form-help">Entitlements define the permission boundary and data classification scope.</span>
-                            </div>
-
-                            <!-- Dates Row -->
-                            <div class="form-row">
-                                <div class="col-half">
-                                    <label class="form-label required" for="req-start-date">Requested Start Date</label>
-                                    <input type="date" id="req-start-date" class="form-input" value="${defaultStartStr}" required>
-                                </div>
-                                <div class="col-half">
-                                    <label class="form-label required" for="req-end-date">Requested End Date</label>
-                                    <input type="date" id="req-end-date" class="form-input" value="${defaultEndStr}" required>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label required" for="req-entitlement-select">Requested Entitlement / Role</label>
+                                    <select id="req-entitlement-select" class="form-select" required disabled>
+                                        <option value="">-- Select Resource First --</option>
+                                    </select>
+                                    <span class="form-help">Entitlements define the permission boundary and data classification scope.</span>
                                 </div>
                             </div>
-                            <span id="req-date-help" class="form-help" style="display: block; margin-top: -0.25rem; margin-bottom: 0.75rem;">
-                                Access lease end date cannot exceed the contractor engagement end date.
-                            </span>
 
-                            <!-- Duration Counter & Policy Preview -->
-                            <div id="policy-preview-box" class="policy-evaluation-box" style="display: none;">
-                                <h4>Governance Policy Evaluation</h4>
-                                <div id="policy-duration-text" style="font-weight: 600; margin-bottom: 4px;">Duration: 14 days</div>
-                                <div id="policy-stages-preview">Estimated Stages: Sponsor &rarr; Resource Owner</div>
+                            <!-- Step 3: Dates & Schedule Section -->
+                            <div class="form-step-section">
+                                <div class="form-step-title">
+                                    <span class="form-step-badge">Step 3</span>
+                                    <span>Lease Schedule &amp; Governance Evaluation</span>
+                                </div>
+                                <div class="form-row">
+                                    <div class="col-half">
+                                        <label class="form-label required" for="req-start-date">Requested Start Date</label>
+                                        <input type="date" id="req-start-date" class="form-input" value="${defaultStartStr}" required>
+                                    </div>
+                                    <div class="col-half">
+                                        <label class="form-label required" for="req-end-date">Requested End Date</label>
+                                        <input type="date" id="req-end-date" class="form-input" value="${defaultEndStr}" required>
+                                    </div>
+                                </div>
+                                <span id="req-date-help" class="form-help" style="display: block; margin-top: -0.25rem; margin-bottom: 0.75rem;">
+                                    Access lease end date cannot exceed the contractor engagement end date.
+                                </span>
+
+                                <!-- Duration Counter & Policy Preview -->
+                                <div id="policy-preview-box" class="policy-evaluation-box" style="display: none;">
+                                    <h4>Governance Policy Evaluation</h4>
+                                    <div id="policy-duration-text" style="font-weight: 600; margin-bottom: 4px;">Duration: 14 days</div>
+                                    <div id="policy-stages-preview">Estimated Stages: Sponsor &rarr; Resource Owner</div>
+                                </div>
                             </div>
 
-                            <!-- Justification -->
-                            <div class="form-group">
-                                <label class="form-label required" for="req-justification">Business Justification</label>
-                                <textarea id="req-justification" class="form-textarea" rows="3" required minlength="10" maxlength="1000" placeholder="Provide specific business context, work item tickets, or project objectives necessitating this access lease..."></textarea>
-                                <span class="form-help">Mandatory for audit trail and compliance verification (minimum 10 characters).</span>
+                            <!-- Step 4: Justification -->
+                            <div class="form-step-section">
+                                <div class="form-step-title">
+                                    <span class="form-step-badge">Step 4</span>
+                                    <span>Business Justification &amp; Compliance Audit Trail</span>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label required" for="req-justification">Business Justification</label>
+                                    <textarea id="req-justification" class="form-textarea" rows="3" required minlength="10" maxlength="1000" placeholder="Provide specific business context, work item tickets, or project objectives necessitating this access lease..."></textarea>
+                                    <span class="form-help">Mandatory for audit trail and compliance verification (minimum 10 characters).</span>
+                                </div>
                             </div>
 
                             <div class="modal-actions" style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
