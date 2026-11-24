@@ -7,6 +7,7 @@ const { describe, it, after } = require('node:test');
 const assert = require('node:assert');
 const { closePool } = require('../../src/config/database');
 const auditRepository = require('../../src/repositories/auditRepository');
+const { DatabaseError } = require('../../src/utils/errors');
 const {
     listAuditEvents,
     getAuditEventById,
@@ -17,6 +18,7 @@ describe('Unit: Audit & Compliance Trail Subsystem', () => {
     after(async () => {
         await closePool();
     });
+
     describe('1. Repository Layer', () => {
         it('exports listAuditEvents, getAuditCount, getAuditStats, getAuditEventById, createAuditEvent', () => {
             assert.strictEqual(typeof auditRepository.listAuditEvents, 'function');
@@ -95,21 +97,93 @@ describe('Unit: Audit & Compliance Trail Subsystem', () => {
     });
 
     describe('3. Single Event Retrieval Validation', () => {
-        it('returns HTTP 404 if event does not exist', async () => {
-            const req = {
-                headers: { authorization: 'Bearer mock-token' },
-                user: {
-                    user_id: 'auditor-uuid-1',
-                    roles: ['COMPLIANCE_AUDITOR']
-                },
-                query: new Map(),
-                params: { id: '999999999' }
+        it('returns HTTP 404 if event does not exist (isolated unit test)', async () => {
+            const originalGetAuditEventById = auditRepository.getAuditEventById;
+            auditRepository.getAuditEventById = async () => null;
+
+            try {
+                const req = {
+                    headers: { authorization: 'Bearer mock-token' },
+                    user: {
+                        user_id: 'auditor-uuid-1',
+                        roles: ['COMPLIANCE_AUDITOR']
+                    },
+                    query: new Map(),
+                    params: { id: '999999999' }
+                };
+                const res = await getAuditEventById(req, { invocationId: 'test-inv-5' });
+                assert.strictEqual(res.status, 404);
+                const body = res.jsonBody;
+                assert.strictEqual(body.success, false);
+                assert.strictEqual(body.error.code, 'ERR_NOT_FOUND');
+            } finally {
+                auditRepository.getAuditEventById = originalGetAuditEventById;
+            }
+        });
+
+        it('returns HTTP 503 if database connection fails (ERR_DATABASE_UNAVAILABLE)', async () => {
+            const originalGetAuditEventById = auditRepository.getAuditEventById;
+            auditRepository.getAuditEventById = async () => {
+                throw new DatabaseError('Database connection lost');
             };
-            const res = await getAuditEventById(req, { invocationId: 'test-inv-5' });
-            assert.strictEqual(res.status, 404);
-            const body = res.jsonBody;
-            assert.strictEqual(body.success, false);
-            assert.strictEqual(body.error.code, 'ERR_NOT_FOUND');
+
+            try {
+                const req = {
+                    headers: { authorization: 'Bearer mock-token' },
+                    user: {
+                        user_id: 'auditor-uuid-1',
+                        roles: ['COMPLIANCE_AUDITOR']
+                    },
+                    query: new Map(),
+                    params: { id: '1001' }
+                };
+                const res = await getAuditEventById(req, { invocationId: 'test-inv-db-err' });
+                assert.strictEqual(res.status, 503);
+                const body = res.jsonBody;
+                assert.strictEqual(body.success, false);
+                assert.strictEqual(body.error.code, 'ERR_DATABASE_UNAVAILABLE');
+            } finally {
+                auditRepository.getAuditEventById = originalGetAuditEventById;
+            }
+        });
+
+        it('returns HTTP 200 with event data if event exists', async () => {
+            const originalGetAuditEventById = auditRepository.getAuditEventById;
+            auditRepository.getAuditEventById = async (id) => ({
+                event_id: Number(id),
+                event_category: 'LIFECYCLE',
+                event_action: 'GRANT_ACTIVATED',
+                entity_type: 'ACCESS_GRANT',
+                entity_id: '87BD1FD6-A262-4D93-972D-79D9BA179317',
+                actor_user_id: 'user-guid-1',
+                actor_type: 'INTERNAL_USER',
+                actor_name: 'Rachel Resource Owner',
+                actor_email: 'owner@example.com',
+                ip_address: '10.0.0.1',
+                event_payload: JSON.stringify({ grant_number: 'AG-20261125-001' }),
+                created_at: new Date('2026-11-25T00:00:00.000Z')
+            });
+
+            try {
+                const req = {
+                    headers: { authorization: 'Bearer mock-token' },
+                    user: {
+                        user_id: 'auditor-uuid-1',
+                        roles: ['COMPLIANCE_AUDITOR']
+                    },
+                    query: new Map(),
+                    params: { id: '1001' }
+                };
+                const res = await getAuditEventById(req, { invocationId: 'test-inv-success' });
+                assert.strictEqual(res.status, 200);
+                const body = res.jsonBody;
+                assert.strictEqual(body.success, true);
+                assert.strictEqual(body.data.event.eventId, 1001);
+                assert.strictEqual(body.data.event.eventAction, 'GRANT_ACTIVATED');
+                assert.strictEqual(body.data.event.actorName, 'Rachel Resource Owner');
+            } finally {
+                auditRepository.getAuditEventById = originalGetAuditEventById;
+            }
         });
     });
 });
