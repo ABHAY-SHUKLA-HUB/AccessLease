@@ -127,12 +127,76 @@ describe('Unit: Environment Configuration', () => {
         assert.ok(summary.sql_auth_mode, 'Must expose safe auth mode indicator');
 
         // MUST NOT contain sensitive keywords or raw credential properties
+        assert.strictEqual('password' in summary, false, 'Summary object must not have password property');
+        assert.strictEqual('secret' in summary, false, 'Summary object must not have secret property');
+        assert.strictEqual('token' in summary, false, 'Summary object must not have token property');
+
+        // Allow harmless 'sql-password' auth mode identifier while ensuring no actual credential values or properties exist
         const serialized = JSON.stringify(summary).toLowerCase();
-        assert.strictEqual(serialized.includes('password'), false, 'Public summary must not leak password');
+        const nonModeContent = serialized.replace(/"sql_auth_mode":"[^"]*"/g, '');
+        assert.strictEqual(nonModeContent.includes('password'), false, 'Public summary must not leak password');
         assert.strictEqual(serialized.includes('secret'), false, 'Public summary must not leak secret');
         assert.strictEqual(serialized.includes('token'), false, 'Public summary must not leak token');
         assert.strictEqual(serialized.includes('connectionstring'), false, 'Public summary must not leak connection string');
         assert.strictEqual(serialized.includes('.database.windows.net'), false, 'Public summary must not leak raw hostname');
+    });
+
+    test('getPublicEnvironmentSummary() must never expose configured SQL password or credentials', () => {
+        const origPass = process.env.SQL_PASSWORD;
+        const origUser = process.env.SQL_USER;
+        const origServer = process.env.SQL_SERVER;
+        const origMode = process.env.SQL_AUTH_MODE;
+        const sentinelPassword = 'SYNTHETIC_TEST_PASSWORD_SENTINEL_XYZ_987';
+        try {
+            process.env.SQL_SERVER = '127.0.0.1';
+            process.env.SQL_AUTH_MODE = 'sql-password';
+            process.env.SQL_USER = 'test_sa_user';
+            process.env.SQL_PASSWORD = sentinelPassword;
+
+            const summary = env.getPublicEnvironmentSummary();
+
+            assert.strictEqual(summary.sql_auth_mode, 'sql-password');
+            assert.strictEqual('password' in summary, false, 'Summary object must not have password property');
+            assert.strictEqual('SQL_PASSWORD' in summary, false, 'Summary object must not have SQL_PASSWORD property');
+
+            const serialized = JSON.stringify(summary);
+            assert.strictEqual(serialized.includes(sentinelPassword), false, 'Summary JSON must not contain configured password');
+            assert.strictEqual(serialized.includes('test_sa_user'), false, 'Summary JSON must not contain configured username');
+        } finally {
+            if (origPass !== undefined) process.env.SQL_PASSWORD = origPass; else delete process.env.SQL_PASSWORD;
+            if (origUser !== undefined) process.env.SQL_USER = origUser; else delete process.env.SQL_USER;
+            if (origServer !== undefined) process.env.SQL_SERVER = origServer; else delete process.env.SQL_SERVER;
+            if (origMode !== undefined) process.env.SQL_AUTH_MODE = origMode; else delete process.env.SQL_AUTH_MODE;
+        }
+    });
+
+    test('getPublicEnvironmentSummary() handles unset SQL_AUTH_MODE without false positive password failure', () => {
+        const origMode = process.env.SQL_AUTH_MODE;
+        const origServer = process.env.SQL_SERVER;
+        const origUser = process.env.SQL_USER;
+        const origPass = process.env.SQL_PASSWORD;
+        try {
+            delete process.env.SQL_AUTH_MODE;
+            delete process.env.AZURE_SQL_AUTH_MODE;
+            delete process.env.SQL_SERVER;
+            delete process.env.AZURE_SQL_SERVER;
+            delete process.env.SQL_USER;
+            delete process.env.SQL_PASSWORD;
+
+            const summary = env.getPublicEnvironmentSummary();
+            assert.strictEqual(summary.sql_auth_mode, 'sql-password');
+
+            const serialized = JSON.stringify(summary).toLowerCase();
+            const nonModeContent = serialized.replace(/"sql_auth_mode":"[^"]*"/g, '');
+            assert.strictEqual(nonModeContent.includes('password'), false, 'Must not leak password when auth mode is unset');
+            assert.strictEqual(serialized.includes('secret'), false);
+            assert.strictEqual(serialized.includes('token'), false);
+        } finally {
+            if (origMode !== undefined) process.env.SQL_AUTH_MODE = origMode; else delete process.env.SQL_AUTH_MODE;
+            if (origServer !== undefined) process.env.SQL_SERVER = origServer; else delete process.env.SQL_SERVER;
+            if (origUser !== undefined) process.env.SQL_USER = origUser; else delete process.env.SQL_USER;
+            if (origPass !== undefined) process.env.SQL_PASSWORD = origPass; else delete process.env.SQL_PASSWORD;
+        }
     });
 
     test('should provide valid integer defaults for timeouts and pool limits', () => {
