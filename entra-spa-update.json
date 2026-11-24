@@ -1,0 +1,8 @@
+﻿{
+  "spa": {
+    "redirectUris": [
+      "http://localhost:7071/",
+      "https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/"
+    ]
+  }
+}

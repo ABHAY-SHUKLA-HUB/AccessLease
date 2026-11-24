@@ -1,0 +1,27 @@
+﻿{
+  "api": {
+    "acceptMappedClaims": null,
+    "knownClientApplications": [],
+    "oauth2PermissionScopes": [
+      {
+        "adminConsentDescription": "Allows the application to access the AccessLease API on behalf of the signed-in user.",
+        "adminConsentDisplayName": "Access AccessLease API as user",
+        "id": "58625fd6-5c8e-4db0-8086-5339c7118700",
+        "isEnabled": true,
+        "type": "Admin",
+        "userConsentDescription": "Allows AccessLease to access its API on your behalf.",
+        "userConsentDisplayName": "Access AccessLease API as user",
+        "value": "access_as_user"
+      }
+    ],
+    "preAuthorizedApplications": [
+      {
+        "appId": "934b724c-19ac-45a7-b463-a2f31a9fa9fb",
+        "delegatedPermissionIds": [
+          "58625fd6-5c8e-4db0-8086-5339c7118700"
+        ]
+      }
+    ],
+    "requestedAccessTokenVersion": null
+  }
+}

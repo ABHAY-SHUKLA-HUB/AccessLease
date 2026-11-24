@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appNamePrefix": {
+      "value": "accesslease"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "koreacentral"
+    },
+    "sqlAdminLogin": {
+      "value": "sqladmin"
+    },
+    "sqlDatabaseSku": {
+      "value": "Basic"
+    },
+    "sqlDatabaseTier": {
+      "value": "Basic"
+    },
+    "entraTenantId": {
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    "entraSpaClientId": {
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    "entraApiClientId": {
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    "entraApiAudience": {
+      "value": "api://00000000-0000-0000-0000-000000000000"
+    },
+    "entraApiScope": {
+      "value": "api://00000000-0000-0000-0000-000000000000/access_as_user"
+    },
+    "allowAllAzureIps": {
+      "value": false
+    },
+    "clientIpAddress": {
+      "value": ""
+    },
+    "sqlEntraAdminLogin": {
+      "value": ""
+    },
+    "sqlEntraAdminSid": {
+      "value": ""
+    }
+  }
+}
+
