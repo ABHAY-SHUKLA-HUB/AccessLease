@@ -5,7 +5,7 @@
 
 param(
     [string]$Server = "(localdb)\MSSQLLocalDB",
-    [string]$Database = "AccessLease_TestDB"
+    [string]$Database = "AccessLease_ValidationDB"
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,7 +36,7 @@ if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to initialize test database."
 }
 
-# Ordered migration files
+# Ordered migration files (all 15 sequential migrations + canonical roles seed)
 $migrationFiles = @(
     "database/migrations/001_create_core_tables.sql",
     "database/migrations/002_add_relationships_and_constraints.sql",
@@ -44,6 +44,15 @@ $migrationFiles = @(
     "database/migrations/004_create_access_exposure_view.sql",
     "database/migrations/005_create_activation_procedure.sql",
     "database/migrations/006_create_contractor_expiry_trigger.sql",
+    "database/migrations/007_create_external_identities_and_provisioning_jobs.sql",
+    "database/migrations/008_create_oauth_states.sql",
+    "database/migrations/009_expand_provisioning_event_types.sql",
+    "database/migrations/010_add_provider_audit_events.sql",
+    "database/migrations/011_enhance_revocation_jobs.sql",
+    "database/migrations/012_revocation_hardening.sql",
+    "database/migrations/013_membership_coordination.sql",
+    "database/migrations/014_orphan_access_findings.sql",
+    "database/migrations/015_orphan_index_hardening.sql",
     "database/seeds/001_system_roles_seed.sql"
 )
 
