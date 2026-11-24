@@ -19,12 +19,37 @@ const { getPool, closePool } = require('../../src/config/database');
 
 describe('Integration: Authentication Endpoints & Real Database Identity Mapping', () => {
     let rsaKeyPair;
+    let originalTenantId;
+    let originalClientId;
+    let originalSpaClientId;
+    let originalApiClientId;
+    let originalApiAudience;
+    let originalApiScope;
+    let originalIssuer;
+
     const TEST_TENANT_ID = 'test-integration-tenant';
-    const TEST_CLIENT_ID = 'test-integration-client';
-    const TEST_AUDIENCE = `api://${TEST_CLIENT_ID}`;
+    const TEST_SPA_CLIENT_ID = 'test-spa-client-integration-1111';
+    const TEST_API_CLIENT_ID = 'test-api-client-integration-2222';
+    const TEST_AUDIENCE = `api://${TEST_API_CLIENT_ID}`;
     const TEST_ISSUER = `https://login.microsoftonline.com/${TEST_TENANT_ID}/v2.0`;
 
     before(async () => {
+        // Set environment variables for tenant matching
+        originalTenantId = process.env.ENTRA_TENANT_ID;
+        originalClientId = process.env.ENTRA_CLIENT_ID;
+        originalSpaClientId = process.env.ENTRA_SPA_CLIENT_ID;
+        originalApiClientId = process.env.ENTRA_API_CLIENT_ID;
+        originalApiAudience = process.env.ENTRA_API_AUDIENCE;
+        originalApiScope = process.env.ENTRA_API_SCOPE;
+        originalIssuer = process.env.ENTRA_ISSUER;
+
+        process.env.ENTRA_TENANT_ID = TEST_TENANT_ID;
+        process.env.ENTRA_SPA_CLIENT_ID = TEST_SPA_CLIENT_ID;
+        process.env.ENTRA_API_CLIENT_ID = TEST_API_CLIENT_ID;
+        process.env.ENTRA_API_AUDIENCE = TEST_AUDIENCE;
+        process.env.ENTRA_API_SCOPE = `${TEST_AUDIENCE}/access_as_user`;
+        process.env.ENTRA_ISSUER = TEST_ISSUER;
+
         // Verify database connectivity
         const pool = await getPool();
         assert.ok(pool.connected, 'Database pool must be connected for integration test');
@@ -43,6 +68,13 @@ describe('Integration: Authentication Endpoints & Real Database Identity Mapping
 
     after(async () => {
         tokenUtils.setCustomKeyResolver(null);
+        process.env.ENTRA_TENANT_ID = originalTenantId;
+        process.env.ENTRA_CLIENT_ID = originalClientId;
+        process.env.ENTRA_SPA_CLIENT_ID = originalSpaClientId;
+        process.env.ENTRA_API_CLIENT_ID = originalApiClientId;
+        process.env.ENTRA_API_AUDIENCE = originalApiAudience;
+        process.env.ENTRA_API_SCOPE = originalApiScope;
+        process.env.ENTRA_ISSUER = originalIssuer;
         await closePool();
     });
 
@@ -75,6 +107,8 @@ describe('Integration: Authentication Endpoints & Real Database Identity Mapping
         assert.strictEqual(res.jsonBody.success, true);
         assert.ok('configured' in res.jsonBody.data);
         assert.strictEqual(res.headers['X-Content-Type-Options'], 'nosniff');
+        assert.strictEqual(res.jsonBody.data.clientId, TEST_SPA_CLIENT_ID);
+        assert.strictEqual(res.jsonBody.data.apiScope, `${TEST_AUDIENCE}/access_as_user`);
 
         // Verify zero secret leakage
         const serialized = JSON.stringify(res.jsonBody).toLowerCase();
@@ -174,6 +208,103 @@ describe('Integration: Authentication Endpoints & Real Database Identity Mapping
         assert.strictEqual(res.jsonBody.data.user.display_name, 'Carlos Contractor');
         assert.strictEqual(res.jsonBody.data.user.user_type, 'CONTRACTOR');
         assert.strictEqual(res.jsonBody.data.user.is_active, true);
+    });
+
+    test('7. GET /api/auth/me: should return HTTP 401 ERR_INVALID_TENANT_ID when token tid does not match configured tenant', async () => {
+        const wrongTenantToken = createSignedToken('TEST-OID-SPONSOR', { tid: 'completely-different-foreign-tenant' });
+        const mockReq = {
+            headers: { authorization: `Bearer ${wrongTenantToken}` },
+            url: 'http://localhost:7071/api/auth/me'
+        };
+        const mockContext = { invocationId: 'int-me-wrong-tenant' };
+
+        const res = await getAuthMe(mockReq, mockContext);
+
+        assert.strictEqual(res.status, 401);
+        assert.strictEqual(res.jsonBody.success, false);
+        assert.strictEqual(res.jsonBody.error.code, 'ERR_INVALID_TENANT_ID');
+    });
+
+    test('8. GET /api/auth/me: should return HTTP 401 ERR_MISSING_TENANT_ID when token lacks tid claim', async () => {
+        const noTenantToken = createSignedToken('TEST-OID-SPONSOR', { tid: undefined });
+        const mockReq = {
+            headers: { authorization: `Bearer ${noTenantToken}` },
+            url: 'http://localhost:7071/api/auth/me'
+        };
+        const mockContext = { invocationId: 'int-me-no-tenant' };
+
+        const res = await getAuthMe(mockReq, mockContext);
+
+        assert.strictEqual(res.status, 401);
+        assert.strictEqual(res.jsonBody.success, false);
+        assert.strictEqual(res.jsonBody.error.code, 'ERR_MISSING_TENANT_ID');
+    });
+
+    test('9. GET /api/auth/me: should return HTTP 401 ERR_INVALID_ISSUER when token issuer does not match tenant STS', async () => {
+        const wrongIssuerToken = createSignedToken('TEST-OID-SPONSOR', {}, { issuer: 'https://sts.windows.net/wrong-tenant-id/' });
+        const mockReq = {
+            headers: { authorization: `Bearer ${wrongIssuerToken}` },
+            url: 'http://localhost:7071/api/auth/me'
+        };
+        const mockContext = { invocationId: 'int-me-wrong-issuer' };
+
+        const res = await getAuthMe(mockReq, mockContext);
+
+        assert.strictEqual(res.status, 401);
+        assert.strictEqual(res.jsonBody.success, false);
+        assert.strictEqual(res.jsonBody.error.code, 'ERR_INVALID_ISSUER');
+    });
+
+    test('10. GET /api/auth/me: should return HTTP 401 ERR_INVALID_SIGNATURE when token signed by untrusted key', async () => {
+        const foreignKeyPair = crypto.generateKeyPairSync('rsa', {
+            modulusLength: 2048,
+            publicKeyEncoding: { type: 'spki', format: 'pem' },
+            privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+        });
+
+        const untrustedToken = jwt.sign(
+            {
+                oid: 'TEST-OID-SPONSOR',
+                sub: 'TEST-OID-SPONSOR',
+                tid: TEST_TENANT_ID
+            },
+            foreignKeyPair.privateKey,
+            {
+                algorithm: 'RS256',
+                audience: TEST_AUDIENCE,
+                issuer: TEST_ISSUER,
+                expiresIn: '30m'
+            }
+        );
+
+        const mockReq = {
+            headers: { authorization: `Bearer ${untrustedToken}` },
+            url: 'http://localhost:7071/api/auth/me'
+        };
+        const mockContext = { invocationId: 'int-me-untrusted-key' };
+
+        const res = await getAuthMe(mockReq, mockContext);
+
+        assert.strictEqual(res.status, 401);
+        assert.strictEqual(res.jsonBody.success, false);
+        assert.strictEqual(res.jsonBody.error.code, 'ERR_INVALID_SIGNATURE');
+    });
+
+    test('11. GET /api/auth/me: should return HTTP 401 ERR_INVALID_AUDIENCE when token is issued for SPA Client ID', async () => {
+        // SPA token or ID token has audience of ENTRA_SPA_CLIENT_ID, not the Web API
+        const spaToken = createSignedToken('TEST-OID-SPONSOR', {}, { audience: TEST_SPA_CLIENT_ID });
+
+        const mockReq = {
+            headers: { authorization: `Bearer ${spaToken}` },
+            url: 'http://localhost:7071/api/auth/me'
+        };
+        const mockContext = { invocationId: 'int-me-spa-token' };
+
+        const res = await getAuthMe(mockReq, mockContext);
+
+        assert.strictEqual(res.status, 401);
+        assert.strictEqual(res.jsonBody.success, false);
+        assert.strictEqual(res.jsonBody.error.code, 'ERR_INVALID_AUDIENCE');
     });
 });
 

@@ -22,6 +22,7 @@ describe('Unit: Authentication Service & Identity Mapping (authService)', () => 
     let rsaKeyPair;
     let originalFindUserByEntraObjectId;
     let originalGetUserRoles;
+    let envBackup = {};
 
     const TEST_TENANT_ID = 'test-tenant-1111-2222-3333';
     const TEST_CLIENT_ID = 'test-client-aaaa-bbbb-cccc';
@@ -39,6 +40,18 @@ describe('Unit: Authentication Service & Identity Mapping (authService)', () => 
             callback(null, rsaKeyPair.publicKey);
         });
 
+        // Backup environment and enforce test identity boundaries
+        envBackup = {
+            ENTRA_TENANT_ID: process.env.ENTRA_TENANT_ID,
+            ENTRA_API_CLIENT_ID: process.env.ENTRA_API_CLIENT_ID,
+            ENTRA_API_AUDIENCE: process.env.ENTRA_API_AUDIENCE,
+            ENTRA_ISSUER: process.env.ENTRA_ISSUER
+        };
+        process.env.ENTRA_TENANT_ID = TEST_TENANT_ID;
+        process.env.ENTRA_API_CLIENT_ID = TEST_CLIENT_ID;
+        process.env.ENTRA_API_AUDIENCE = TEST_AUDIENCE;
+        process.env.ENTRA_ISSUER = TEST_ISSUER;
+
         // Backup repository methods for isolated unit testing
         originalFindUserByEntraObjectId = userRepository.findUserByEntraObjectId;
         originalGetUserRoles = userRepository.getUserRoles;
@@ -48,6 +61,12 @@ describe('Unit: Authentication Service & Identity Mapping (authService)', () => 
         tokenUtils.setCustomKeyResolver(null);
         userRepository.findUserByEntraObjectId = originalFindUserByEntraObjectId;
         userRepository.getUserRoles = originalGetUserRoles;
+
+        // Restore environment
+        for (const [key, val] of Object.entries(envBackup)) {
+            if (val !== undefined) process.env[key] = val;
+            else delete process.env[key];
+        }
     });
 
     function createTokenForOid(oid) {
@@ -194,5 +213,51 @@ describe('Unit: Authentication Service & Identity Mapping (authService)', () => 
         assert.strictEqual(serialized.includes('connectionstring'), false);
         assert.strictEqual(serialized.includes('privatekey'), false);
         assert.strictEqual(serialized.includes('token_secret'), false);
+    });
+
+    test('5. Tenant Mismatch Pre-Database Rejection: tenant mismatch must NEVER query the database repository', async () => {
+        let dbQueryCalls = 0;
+        userRepository.findUserByEntraObjectId = async () => {
+            dbQueryCalls++;
+            return { user_id: 'fake', entra_object_id: 'fake' };
+        };
+
+        // Create token with foreign unauthorized tenant
+        const foreignTenantToken = jwt.sign(
+            {
+                oid: 'entra-user-with-wrong-tenant',
+                sub: 'sub-wrong-tenant',
+                tid: 'unauthorized-foreign-tenant-9999'
+            },
+            rsaKeyPair.privateKey,
+            {
+                algorithm: 'RS256',
+                audience: TEST_AUDIENCE,
+                issuer: TEST_ISSUER,
+                expiresIn: '1h'
+            }
+        );
+
+        await assert.rejects(
+            async () => {
+                await authService.authenticateToken(foreignTenantToken, {
+                    tenantId: TEST_TENANT_ID,
+                    audience: TEST_AUDIENCE,
+                    issuer: TEST_ISSUER
+                });
+            },
+            (err) => {
+                assert.ok(err instanceof UnauthorizedError);
+                assert.strictEqual(err.code, 'ERR_INVALID_TENANT_ID');
+                return true;
+            }
+        );
+
+        // Crucial security invariant: Database repository was NEVER queried
+        assert.strictEqual(
+            dbQueryCalls,
+            0,
+            'Security violation: Database repository must never be reached when tenant ID is mismatched'
+        );
     });
 });
