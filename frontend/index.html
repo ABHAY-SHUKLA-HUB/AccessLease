@@ -4,84 +4,1034 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <meta name="description" content="AccessLease - Company-Grade Contractor Access and Offboarding Governance">
+    <meta name="description" content="AccessLease - Company-Grade Contractor Access and Offboarding Governance Platform">
     <title>AccessLease — Contractor Access &amp; Offboarding Governance</title>
     <link rel="stylesheet" href="assets/css/main.css">
 </head>
 <body>
-    <header class="app-header">
+    <!-- Top Enterprise Application Header -->
+    <header class="app-header" role="banner">
         <div class="header-container">
             <div class="brand">
-                <span class="brand-badge">Enterprise Governance</span>
-                <h1 class="brand-title">AccessLease</h1>
+                <div class="brand-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <div class="brand-row">
+                        <h1 class="brand-title">AccessLease</h1>
+                        <span class="brand-badge">Enterprise Governance</span>
+                    </div>
+                    <span class="brand-subtitle">Contractor Access &amp; Offboarding Governance Platform</span>
+                </div>
             </div>
-            <nav class="nav-placeholder" aria-label="Application navigation placeholder">
-                <span class="nav-status">Phase: STEP 03 Entra ID Auth</span>
-                <span id="auth-loading-indicator" class="loading-spinner" style="display: none;" title="Processing authentication..."></span>
-            </nav>
+
+            <!-- System Connectivity & Auth Header Summary -->
+            <div class="header-right">
+                <div class="health-indicators" aria-label="System status indicators">
+                    <span id="system-health-badge" class="status-pill status-pill-neutral">API: Connecting...</span>
+                    <span id="db-health-badge" class="status-pill status-pill-neutral">Database: Connecting...</span>
+                    <span id="auth-loading-indicator" class="loading-spinner" style="display: none;" title="Processing authentication..."></span>
+                </div>
+
+                <!-- Authenticated User Profile Pill in Header (shown when authenticated) -->
+                <div id="header-user-profile" class="header-profile" style="display: none;">
+                    <div id="header-user-avatar" class="header-avatar" aria-hidden="true">U</div>
+                    <div class="header-user-info">
+                        <span id="header-user-name" class="header-user-name">User Name</span>
+                        <span class="header-user-role">Verified Identity</span>
+                    </div>
+                    <button id="btn-header-logout" class="btn-logout" type="button" title="Sign out of AccessLease">Sign Out</button>
+                </div>
+            </div>
         </div>
     </header>
 
-    <main class="main-container">
-        <!-- Live Microsoft Entra ID Authentication Section -->
-        <section id="auth-status-container" class="auth-section" aria-live="polite">
-            <div class="auth-box auth-box-loading">
-                <div class="loading-message">Initializing Microsoft Entra ID authentication subsystem...</div>
+    <!-- Application Body with Sidebar and Main Workspace -->
+    <div class="app-layout">
+        <!-- Navigation Sidebar -->
+        <aside class="app-sidebar" role="navigation" aria-label="Governance Lifecycle Navigation">
+            <div class="sidebar-header">
+                <span class="sidebar-label">Governance Modules</span>
             </div>
-        </section>
+            <nav class="sidebar-nav">
+                <a href="#shell" class="nav-link active" data-view="view-governance-shell" aria-current="page">
+                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
+                    <span class="nav-text">Governance Shell</span>
+                    <span class="nav-badge nav-badge-active">Active</span>
+                </a>
+                <a href="#contractors" class="nav-link" data-view="view-contractors">
+                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
+                    <span class="nav-text">Contractor Engagements</span>
+                    <span class="nav-badge nav-badge-active">Active</span>
+                </a>
+                <a href="#catalog" class="nav-link" data-view="view-catalog">
+                    <span class="nav-icon" aria-hidden="true">&#9744;</span>
+                    <span class="nav-text">Resource Catalogue</span>
+                    <span class="nav-badge nav-badge-planned">Upcoming</span>
+                </a>
+                <a href="#requests" class="nav-link" data-view="view-requests">
+                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
+                    <span class="nav-text">Access Requests &amp; Leases</span>
+                    <span class="nav-badge nav-badge-active">Active</span>
+                </a>
+                <a href="#approvals" class="nav-link" data-view="view-approvals">
+                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
+                    <span class="nav-text">Multi-Stage Approvals</span>
+                    <span class="nav-badge nav-badge-active">Active</span>
+                </a>
+                <a href="#offboarding" class="nav-link" data-view="view-offboarding">
+                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
+                    <span class="nav-text">Revocation &amp; Offboarding</span>
+                    <span class="nav-badge nav-badge-active">Active</span>
+                </a>
+                <a href="#analytics" class="nav-link" data-view="view-analytics">
+                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
+                    <span class="nav-text">Security Analytics</span>
+                    <span class="nav-badge nav-badge-active">Active</span>
+                </a>
+                <a href="#orphan-access" class="nav-link" data-view="view-orphan-findings">
+                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
+                    <span class="nav-text">Orphan Access Findings</span>
+                    <span class="nav-badge nav-badge-active">Active</span>
+                </a>
+                <a href="#reviews" class="nav-link" data-view="view-reviews">
+                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
+                    <span class="nav-text">Access Reviews</span>
+                    <span class="nav-badge nav-badge-active">Active</span>
+                </a>
+                <a href="#users" id="nav-link-users" class="nav-link" data-view="view-users" style="display: none;">
+                    <span class="nav-icon" aria-hidden="true">&#9672;</span>
+                    <span class="nav-text">User Management</span>
+                    <span class="nav-badge nav-badge-active">Admin</span>
+                </a>
+                <a href="#audit" class="nav-link" data-view="view-audit">
+                    <span class="nav-icon" aria-hidden="true">&#9744;</span>
+                    <span class="nav-text">Audit &amp; Compliance Trail</span>
+                    <span class="nav-badge nav-badge-planned">Upcoming</span>
+                </a>
+            </nav>
 
-        <!-- System Governance & Architecture Overview -->
-        <section class="initialization-card">
-            <div class="badge-status">Identity &amp; Governance Engine Active</div>
-            <h2>Company-Grade Contractor Access &amp; Offboarding Governance</h2>
-            <p class="lead-text">
-                AccessLease governs temporary contractor access lifecycle across enterprise resources,
-                ensuring every grant is strictly owned, approved, time-bound, reviewable, and verifiably revoked.
-            </p>
-
-            <div class="pillars-grid">
-                <article class="pillar-item">
-                    <h3>Owned</h3>
-                    <p>Internal business sponsors and system owners are permanently assigned to every contractor entitlement.</p>
-                </article>
-                <article class="pillar-item">
-                    <h3>Approved</h3>
-                    <p>Explicit, audited approval workflows eliminate undocumented and out-of-band access grants.</p>
-                </article>
-                <article class="pillar-item">
-                    <h3>Time-Bound</h3>
-                    <p>Deterministic lease periods with automated termination timestamps prevent lingering access.</p>
-                </article>
-                <article class="pillar-item">
-                    <h3>Reviewable</h3>
-                    <p>Periodic recertification and complete audit trail ready for enterprise compliance examinations.</p>
-                </article>
-                <article class="pillar-item">
-                    <h3>Verifiably Revoked</h3>
-                    <p>Automated deprovisioning engines confirm and log cryptographic and operational revocation proofs.</p>
-                </article>
+            <div class="sidebar-footer">
+                <div class="sidebar-principles-title">Five Core Pillars</div>
+                <ul class="sidebar-principles-list">
+                    <li><span class="bullet">&bull;</span> Owned Entitlements</li>
+                    <li><span class="bullet">&bull;</span> Multi-Stage Approved</li>
+                    <li><span class="bullet">&bull;</span> Deterministic Expiry</li>
+                    <li><span class="bullet">&bull;</span> Recertification Ready</li>
+                    <li><span class="bullet">&bull;</span> Verifiable Revocation</li>
+                </ul>
             </div>
+        </aside>
 
-            <div class="initialization-notice">
-                <h3>Authentication &amp; Identity Architecture</h3>
-                <p>
-                    <strong>OAuth 2.0 Authorization Code Flow with PKCE:</strong> Front-channel identity is securely authenticated
-                    via Microsoft Entra ID (MSAL Browser). All API requests attach cryptographic Bearer tokens verified on the backend
-                    using Microsoft public signing keys (JWKS RS256). Stable Entra Object IDs (<code>oid</code>) map deterministically
-                    to application users in <code>dbo.users</code>.
-                </p>
+        <!-- Main Content Area -->
+        <main class="app-main" id="main-content" role="main">
+            <!-- Dynamic Authentication & Setup Status Container -->
+            <section id="auth-status-container" class="auth-section" aria-live="polite">
+                <div class="auth-box auth-box-loading">
+                    <div class="loading-message">Initializing Microsoft Entra ID authentication subsystem...</div>
+                </div>
+            </section>
+
+            <!-- Authenticated Workspace View (rendered when user is verified) -->
+            <div id="authenticated-shell-view" class="authenticated-shell" style="display: none;">
+                <!-- Tab View 1: Governance Foundation Shell (Active) -->
+                <div id="view-governance-shell" class="workspace-view active">
+                    <!-- Verified Identity Resolution Card -->
+                    <section class="content-card">
+                        <div class="card-header-row">
+                            <span class="badge-status">Identity &amp; RBAC Subsystem Verified</span>
+                            <span class="auth-provider-pill">Microsoft Entra ID</span>
+                        </div>
+                        <h2>Authenticated Identity &amp; Governance Roles</h2>
+                        <p class="lead-text">
+                            Your cloud identity was cryptographically verified via Microsoft Entra ID (RS256 JWKS)
+                            and resolved to an active record in Microsoft SQL Server (<code>dbo.users</code>).
+                        </p>
+
+                        <div class="identity-details-grid">
+                            <div class="identity-item">
+                                <span class="id-label">Display Name</span>
+                                <span id="shell-user-name" class="id-value strong">—</span>
+                            </div>
+                            <div class="identity-item">
+                                <span class="id-label">Corporate Email</span>
+                                <span id="shell-user-email" class="id-value">—</span>
+                            </div>
+                            <div class="identity-item">
+                                <span class="id-label">User Classification</span>
+                                <span id="shell-user-type" class="user-type-tag badge-employee">—</span>
+                            </div>
+                            <div class="identity-item">
+                                <span class="id-label">Department</span>
+                                <span id="shell-user-dept" class="id-value">—</span>
+                            </div>
+                            <div class="identity-item">
+                                <span class="id-label">Database User ID (GUID)</span>
+                                <span class="id-value"><code><span id="shell-user-id">—</span></code></span>
+                            </div>
+                            <div class="identity-item">
+                                <span class="id-label">Entra Object ID (oid)</span>
+                                <span class="id-value"><code><span id="shell-user-oid">—</span></code></span>
+                            </div>
+                        </div>
+
+                        <div class="roles-section">
+                            <span class="id-label">Assigned Governance Roles</span>
+                            <div id="shell-user-roles" class="roles-container">
+                                <span class="role-chip">Loading roles...</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Foundation Architecture Readiness Overview -->
+                    <section class="content-card" style="margin-top: 1.5rem;">
+                        <div class="badge-status">Foundation Phase Rebaselined</div>
+                        <h3>Application Foundation &amp; Governance Engine Readiness</h3>
+                        <p class="lead-text">
+                            AccessLease governs temporary contractor access across enterprise resources,
+                            ensuring every grant is strictly owned, approved, time-bound, reviewable, and verifiably revoked.
+                        </p>
+
+                        <div class="pillars-grid">
+                            <article class="pillar-item">
+                                <h4>Owned</h4>
+                                <p>Permanent business sponsors and technical system owners assigned to every grant.</p>
+                            </article>
+                            <article class="pillar-item">
+                                <h4>Approved</h4>
+                                <p>Multi-stage approval workflows eliminate undocumented or out-of-band access grants.</p>
+                            </article>
+                            <article class="pillar-item">
+                                <h4>Time-Bound</h4>
+                                <p>Deterministic lease periods with automated expiry prevent lingering contractor access.</p>
+                            </article>
+                            <article class="pillar-item">
+                                <h4>Reviewable</h4>
+                                <p>Periodic access recertification with tamper-evident audit history for compliance exams.</p>
+                            </article>
+                            <article class="pillar-item">
+                                <h4>Verifiably Revoked</h4>
+                                <p>Automated revocation engine validates cryptographic and directory deprovisioning proofs.</p>
+                            </article>
+                        </div>
+
+                        <div class="foundation-summary-box">
+                            <h4>Current Implementation Status (Step 00 Rebaseline)</h4>
+                            <ul class="foundation-checklist">
+                                <li><strong>Relational Database:</strong> 15 normalized tables in 3NF deployed and verified in Microsoft SQL Server / Azure SQL.</li>
+                                <li><strong>Cloud Security:</strong> Microsoft Entra ID OAuth 2.0 PKCE authentication with RS256 token verification.</li>
+                                <li><strong>Full-Stack Integration:</strong> Azure Functions v4 REST backend communicating with Vanilla JavaScript client.</li>
+                                <li><strong>Upcoming Business Modules:</strong> Contractor CRUD, Resource Catalogue, Access Requests, and Revocation scheduled in subsequent steps.</li>
+                            </ul>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab View 2: Contractor Engagements (Active Business Module) -->
+                <div id="view-contractors" class="workspace-view" style="display: none;">
+                    <div class="table-loading-state">Initializing Contractor &amp; Engagement module...</div>
+                </div>
+
+                <!-- Modal Container: Contractor Engagements -->
+                <div id="contractor-modal-container">
+                    <div class="modal-backdrop" id="engagement-modal-backdrop" style="display: none;">
+                        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+                            <div class="modal-header">
+                                <h3 id="modal-title">Register New Contractor Engagement</h3>
+                                <button type="button" class="btn-close" id="btn-close-modal" aria-label="Close">&times;</button>
+                            </div>
+                            <form id="form-engagement" class="modal-form">
+                                <div id="modal-form-alert" class="modal-alert-box" style="display: none;"></div>
+
+                                <div class="form-group" id="form-group-contractor-select">
+                                    <label for="form-contractor-id" class="form-label required">Contractor Identity</label>
+                                    <select id="form-contractor-id" class="form-select" required>
+                                        <option value="">Select an active contractor...</option>
+                                    </select>
+                                    <span class="form-help">Only active users registered in dbo.users as CONTRACTOR appear here.</span>
+                                </div>
+
+                                <div class="form-group" id="form-group-contractor-static" style="display: none;">
+                                    <label class="form-label">Contractor</label>
+                                    <div class="form-static-value">
+                                        <strong id="form-static-contractor-name">—</strong> (<span id="form-static-contractor-email">—</span>)
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group col-half">
+                                        <label for="form-vendor-name" class="form-label required">Vendor / Staffing Firm</label>
+                                        <input type="text" id="form-vendor-name" class="form-input" 
+                                               placeholder="e.g. Acme Consulting Corp" 
+                                               maxlength="150" required>
+                                    </div>
+                                    <div class="form-group col-half">
+                                        <label for="form-contract-ref" class="form-label required">Contract / SOW Reference</label>
+                                        <input type="text" id="form-contract-ref" class="form-input" 
+                                               placeholder="e.g. SOW-2026-088" 
+                                               maxlength="100" required>
+                                        <span class="form-help">Must be unique per contractor.</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group col-half">
+                                        <label for="form-start-date" class="form-label required">Engagement Start Date</label>
+                                        <input type="date" id="form-start-date" class="form-input" required>
+                                    </div>
+                                    <div class="form-group col-half">
+                                        <label for="form-end-date" class="form-label required">Engagement End Date</label>
+                                        <input type="date" id="form-end-date" class="form-input" required>
+                                        <span class="form-help">Access grants cannot exceed this date.</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group" id="form-group-initial-status">
+                                    <label for="form-initial-status" class="form-label required">Initial Status</label>
+                                    <select id="form-initial-status" class="form-select">
+                                        <option value="ACTIVE" selected>ACTIVE (Ready for access grants)</option>
+                                        <option value="PENDING">PENDING (Pre-onboarding review)</option>
+                                    </select>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary" id="btn-submit-engagement">Create Engagement</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <!-- Modal: Register New Contractor (Admin Only) -->
+                    <div class="modal-backdrop" id="add-contractor-modal-backdrop" style="display: none;">
+                        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-add-contractor-title">
+                            <div class="modal-header">
+                                <h3 id="modal-add-contractor-title">Register New External Contractor</h3>
+                                <button type="button" class="btn-close" id="btn-close-add-contractor-modal" aria-label="Close">&times;</button>
+                            </div>
+                            <form id="form-add-contractor" class="modal-form">
+                                <div id="modal-contractor-alert" class="modal-alert-box" style="display: none;"></div>
+
+                                <div class="form-group">
+                                    <label for="add-contractor-name" class="form-label required">Contractor Full Name</label>
+                                    <input type="text" id="add-contractor-name" class="form-input" placeholder="e.g. Jane Doe" required autocomplete="off">
+                                    <span class="form-help">Display name for identity governance records.</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="add-contractor-email" class="form-label required">Email Address</label>
+                                    <input type="email" id="add-contractor-email" class="form-input" placeholder="e.g. jane.doe@partner-vendor.com" required autocomplete="off">
+                                    <span class="form-help">Unique email address (must be valid and distinct).</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group col-half">
+                                        <label for="add-contractor-company" class="form-label">Company / Organization</label>
+                                        <input type="text" id="add-contractor-company" class="form-input" placeholder="e.g. Cyberdyne Systems / Vendor Alpha" autocomplete="off" maxlength="100">
+                                        <span class="form-help">Contractor vendor or partner organization.</span>
+                                    </div>
+                                    <div class="form-group col-half">
+                                        <label for="add-contractor-phone" class="form-label">Contact Number</label>
+                                        <input type="tel" id="add-contractor-phone" class="form-input" placeholder="e.g. +1 555-0199 or 9876543210" autocomplete="off">
+                                        <span class="form-help">Primary contact number (optional).</span>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer" style="padding: 1rem 0 0 0; margin-top: 1rem; border-top: 1px solid var(--color-border); background: transparent;">
+                                    <button type="button" class="btn btn-secondary" id="btn-cancel-add-contractor">Cancel</button>
+                                    <button type="submit" class="btn btn-primary" id="btn-submit-add-contractor">
+                                        <span id="add-contractor-spinner" class="loading-spinner" style="display: none; margin-right: 6px;"></span>
+                                        Register Contractor
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Sub-Modals (Transition, History) -->
+                    <div id="contractor-submodal-container"></div>
+                </div>
+
+                <!-- Tab View 3: Resource Catalogue (Scheduled) -->
+                <div id="view-catalog" class="workspace-view" style="display: none;">
+                    <section class="content-card">
+                        <span class="nav-badge nav-badge-planned">Upcoming Implementation</span>
+                        <h2>Resource &amp; Entitlement Catalogue</h2>
+                        <p class="lead-text">
+                            Enterprise resource cataloguing, risk classifications, system owner mapping, and entitlements
+                            will be implemented in the catalog stage.
+                        </p>
+                        <div class="module-placeholder-box">
+                            <p><strong>Database Foundation Ready:</strong> <code>dbo.resources</code>, <code>dbo.entitlements</code>, and <code>dbo.resource_owners</code> tables are active.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab View 4: Access Requests & Leases (Scheduled) -->
+                <div id="view-requests" class="workspace-view" style="display: none;">
+                    <section class="content-card">
+                        <span class="nav-badge nav-badge-planned">Upcoming Implementation</span>
+                        <h2>Time-Bound Access Requests &amp; Leases</h2>
+                        <p class="lead-text">
+                            Time-bound lease requests with business justification, start/end dates, and sponsor endorsement
+                            will be implemented in the access request stage.
+                        </p>
+                        <div class="module-placeholder-box">
+                            <p><strong>Database Foundation Ready:</strong> <code>dbo.access_requests</code> and <code>dbo.access_grants</code> are fully configured with expiry constraints.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab View 5: Multi-Stage Approvals (Scheduled) -->
+                <div id="view-approvals" class="workspace-view" style="display: none;">
+                    <section class="content-card">
+                        <span class="nav-badge nav-badge-planned">Upcoming Implementation</span>
+                        <h2>Multi-Stage Approval Workflows</h2>
+                        <p class="lead-text">
+                            Sponsor and Resource Owner approval routing, decision logging, and conditional grant activation.
+                        </p>
+                        <div class="module-placeholder-box">
+                            <p><strong>Database Foundation Ready:</strong> <code>dbo.approval_steps</code> and stored procedure <code>sp_ActivateApprovedGrant</code> are ready.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab View 6: Revocation & Offboarding (Active) -->
+                <div id="view-offboarding" class="workspace-view" style="display: none;">
+                    <!-- Offboarding Governance Header -->
+                    <div class="view-header">
+                        <div>
+                            <h2>Automated Expiry, Revocation &amp; Contractor Offboarding</h2>
+                            <p class="lead-text">
+                                Scheduled lease expiry, immediate contractor offboarding, verified GitHub team membership deletion, and auditable manual review resolution.
+                            </p>
+                        </div>
+                        <div class="header-actions">
+                            <button id="btn-trigger-expiry-scan" class="btn btn-primary">Trigger Expiry Scan</button>
+                            <button id="btn-refresh-revocation-queue" class="btn btn-outline">&#8635; Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Metrics / KPI Grid -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <span class="kpi-label">Expiring Soon (7d)</span>
+                            <span id="kpi-expiring-grants-count" class="kpi-value">—</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">Queued / Processing</span>
+                            <span id="kpi-queued-revocations" class="kpi-value">—</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">Confirmed Revoked</span>
+                            <span id="kpi-confirmed-revocations" class="kpi-value kpi-success">—</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">Manual Review Required</span>
+                            <span id="kpi-review-required" class="kpi-value kpi-warning">—</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">Failed / Retrying</span>
+                            <span id="kpi-failed-revocations" class="kpi-value kpi-danger">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Immediate Contractor Offboarding Section -->
+                    <section class="content-card">
+                        <div class="card-header-clean">
+                            <h3>Immediate Contractor Offboarding</h3>
+                            <span class="badge-risk badge-risk-high">High Impact Action</span>
+                        </div>
+                        <p class="lead-text">
+                            Terminating an engagement immediately initiates background revocation of all active and pending access grants, routes unowned access to manual review, and tracks offboarding completion.
+                        </p>
+                        <div class="offboarding-form-card">
+                            <div class="offboarding-form-grid">
+                                <div class="form-group">
+                                    <label for="offboarding-engagement-id" class="form-label required">Contractor Engagement ID (GUID)</label>
+                                    <input type="text" id="offboarding-engagement-id" class="form-control" placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000" autocomplete="off" spellcheck="false">
+                                    <span class="form-help">Enter the active engagement UUID to terminate.</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="offboarding-reason" class="form-label required">Termination Reason</label>
+                                    <input type="text" id="offboarding-reason" class="form-control" placeholder="e.g. Contract completed early / Security policy offboarding">
+                                    <span class="form-help">Auditable reason logged in governance ledger.</span>
+                                </div>
+                                <div class="form-group form-actions-align">
+                                    <button id="btn-terminate-engagement" class="btn btn-danger btn-terminate" type="button">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>
+                                        Terminate &amp; Offboard
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="offboarding-progress-display" style="margin-top: 1rem;"></div>
+                    </section>
+
+                    <!-- Revocation Queue Table Section -->
+                    <section class="content-card">
+                        <div class="card-header-clean">
+                            <h3>Revocation Operations Queue</h3>
+                            <div class="header-actions">
+                                <label for="revocation-status-filter" class="filter-label">Filter Status:</label>
+                                <select id="revocation-status-filter" class="form-control" style="width: auto;">
+                                    <option value="">All Statuses</option>
+                                    <option value="QUEUED">QUEUED</option>
+                                    <option value="PROCESSING">PROCESSING</option>
+                                    <option value="REVOKED">REVOKED</option>
+                                    <option value="MANUAL_REVIEW_REQUIRED">MANUAL_REVIEW_REQUIRED</option>
+                                    <option value="FAILED_RETRY">FAILED_RETRY</option>
+                                    <option value="PERMANENT_FAILURE">PERMANENT_FAILURE</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="revocation-loading-state" class="text-center" style="display: none; padding: 2rem;">
+                            <div class="loading-spinner"></div>
+                            <p class="text-muted">Loading revocation jobs...</p>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Grant / Job ID</th>
+                                        <th>Contractor</th>
+                                        <th>Target Resource / Team</th>
+                                        <th>Provenance</th>
+                                        <th>Status</th>
+                                        <th>Response &amp; Verification</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="revocation-jobs-tbody">
+                                    <!-- Dynamic rows loaded via offboarding.js -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="revocation-empty-state" class="empty-state" style="display: none; padding: 2rem; text-align: center;">
+                            <p class="text-muted">No revocation operations found matching the current filter criteria.</p>
+                        </div>
+                    </section>
+
+                    <!-- Expiring Grants Overview Section -->
+                    <section class="content-card">
+                        <h3>Upcoming Expiring Access Grants (Next 7 Days)</h3>
+                        <div id="expiring-grants-list">
+                            <!-- Populated dynamically via offboarding.js -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab View: Security Analytics Dashboard (PROMPT 08) -->
+                <div id="view-analytics" class="workspace-view" style="display: none;">
+                    <div class="view-header">
+                        <div>
+                            <h2>Security Analytics &amp; Governance Dashboard</h2>
+                            <p class="lead-text">
+                                Real-time, database-driven posture metrics, orphan access exposure, revocation health, and recertification progress.
+                            </p>
+                        </div>
+                        <div class="header-actions">
+                            <span id="analytics-scope-pill" class="status-pill status-pill-success">ENTERPRISE</span>
+                            <span id="analytics-last-updated" class="text-muted small">Updated: —</span>
+                            <button id="btn-refresh-analytics" class="btn btn-outline">&#8635; Refresh Metrics</button>
+                        </div>
+                    </div>
+
+                    <div id="analytics-loading-state" class="text-center" style="display: none; padding: 2rem;">
+                        <div class="loading-spinner"></div>
+                        <p class="text-muted">Computing security analytics metrics from database...</p>
+                    </div>
+
+                    <div id="analytics-error-state" class="status-banner banner-danger" style="display: none; margin-bottom: 1rem;">
+                        <span id="analytics-error-message">Failed to load analytics metrics.</span>
+                    </div>
+
+                    <div id="analytics-content-container">
+                        <!-- Primary 10 KPIs Grid -->
+                        <div class="kpi-grid">
+                            <div class="kpi-card">
+                                <span class="kpi-label">Active Engagements</span>
+                                <span id="metric-active-engagements" class="kpi-value">—</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Active Access Grants</span>
+                                <span id="metric-active-grants" class="kpi-value kpi-success">—</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Expiring Soon (7d)</span>
+                                <span id="metric-expiring-soon" class="kpi-value kpi-warning">—</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Pending Requests</span>
+                                <span id="metric-pending-requests" class="kpi-value">—</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Pending Approvals</span>
+                                <span id="metric-pending-approvals" class="kpi-value">—</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Open Orphan Findings</span>
+                                <span id="metric-open-orphans" class="kpi-value kpi-danger">—</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Pending Revocations</span>
+                                <span id="metric-pending-revocations" class="kpi-value">—</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Failed / Review Required</span>
+                                <span id="metric-failed-revocations" class="kpi-value kpi-danger">—</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Open Access Reviews</span>
+                                <span id="metric-open-reviews" class="kpi-value kpi-warning">—</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Completed Reviews</span>
+                                <span id="metric-completed-reviews" class="kpi-value kpi-success">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Breakdown Cards Grid -->
+                        <div class="analytics-breakdown-grid">
+                            <!-- Orphan Severity Distribution -->
+                            <section class="content-card breakdown-card">
+                                <h3>Orphan Findings by Severity</h3>
+                                <p class="lead-text">Distribution of active findings identified by automated detection scans.</p>
+                                <div class="breakdown-list">
+                                    <div class="breakdown-item item-critical">
+                                        <span class="badge-risk badge-risk-critical">CRITICAL</span>
+                                        <span id="breakdown-critical-findings" class="breakdown-count text-danger">0</span>
+                                    </div>
+                                    <div class="breakdown-item item-high">
+                                        <span class="badge-risk badge-risk-high">HIGH</span>
+                                        <span id="breakdown-high-findings" class="breakdown-count text-warning">0</span>
+                                    </div>
+                                    <div class="breakdown-item item-medium">
+                                        <span class="badge-risk badge-risk-medium">MEDIUM</span>
+                                        <span id="breakdown-medium-findings" class="breakdown-count text-warning">0</span>
+                                    </div>
+                                    <div class="breakdown-item item-low">
+                                        <span class="badge-risk badge-risk-low">LOW</span>
+                                        <span id="breakdown-low-findings" class="breakdown-count text-success">0</span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- Revocation Operations Distribution -->
+                            <section class="content-card breakdown-card">
+                                <h3>Revocation Engine Pipeline Health</h3>
+                                <p class="lead-text">Real-time status of deprovisioning worker operations across all providers.</p>
+                                <div class="breakdown-list">
+                                    <div class="breakdown-item item-queued">
+                                        <span class="breakdown-label">Queued / Processing</span>
+                                        <span id="breakdown-rev-pending" class="breakdown-count">0</span>
+                                    </div>
+                                    <div class="breakdown-item item-confirmed">
+                                        <span class="breakdown-label text-success">Confirmed Revoked</span>
+                                        <span id="breakdown-rev-confirmed" class="breakdown-count text-success">0</span>
+                                    </div>
+                                    <div class="breakdown-item item-review">
+                                        <span class="breakdown-label text-warning">Manual Review Required</span>
+                                        <span id="breakdown-rev-review" class="breakdown-count text-warning">0</span>
+                                    </div>
+                                    <div class="breakdown-item item-failed">
+                                        <span class="breakdown-label text-danger">Failed / Retrying</span>
+                                        <span id="breakdown-rev-failed" class="breakdown-count text-danger">0</span>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab View: Orphan Access Findings (PROMPT 08) -->
+                <div id="view-orphan-findings" class="workspace-view" style="display: none;">
+                    <div class="view-header">
+                        <div>
+                            <h2>Orphan &amp; Stale Access Detection</h2>
+                            <p class="lead-text">
+                                Database-driven identification of lingering access: active grants on terminated engagements, expired grants, and invalid references.
+                            </p>
+                        </div>
+                        <div class="header-actions">
+                            <button id="btn-trigger-orphan-scan" class="btn btn-primary">Trigger Orphan Detection Scan</button>
+                            <button id="btn-refresh-orphan-findings" class="btn btn-outline">&#8635; Refresh</button>
+                        </div>
+                    </div>
+
+                    <div id="orphan-scan-alert" class="status-banner banner-success" style="display: none; margin-bottom: 1rem;"></div>
+
+                    <section class="content-card">
+                        <!-- Filters -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+                            <h3>Detected Orphan Access Findings</h3>
+                            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                                <select id="orphan-status-filter" class="form-control" style="width: auto;">
+                                    <option value="">All Statuses</option>
+                                    <option value="OPEN" selected>OPEN</option>
+                                    <option value="INVESTIGATING">INVESTIGATING</option>
+                                    <option value="REVOCATION_INITIATED">REVOCATION_INITIATED</option>
+                                    <option value="RESOLVED">RESOLVED</option>
+                                    <option value="FALSE_POSITIVE">FALSE_POSITIVE</option>
+                                </select>
+                                <select id="orphan-severity-filter" class="form-control" style="width: auto;">
+                                    <option value="">All Severities</option>
+                                    <option value="CRITICAL">CRITICAL</option>
+                                    <option value="HIGH">HIGH</option>
+                                    <option value="MEDIUM">MEDIUM</option>
+                                    <option value="LOW">LOW</option>
+                                </select>
+                                <select id="orphan-reason-filter" class="form-control" style="width: auto;">
+                                    <option value="">All Reasons</option>
+                                    <option value="ENDED_ENGAGEMENT_ACTIVE_GRANT">Ended Engagement Active Grant</option>
+                                    <option value="EXPIRED_ENGAGEMENT_ACTIVE_GRANT">Expired Engagement Active Grant</option>
+                                    <option value="EXPIRED_GRANT_ACTIVE_STATUS">Expired Grant Active Status</option>
+                                    <option value="INVALID_OR_DELETED_REFERENCE">Invalid or Inactive Reference</option>
+                                    <option value="INCONSISTENT_LIFECYCLE_STATE">Inconsistent Lifecycle State</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="orphan-loading-state" class="text-center" style="display: none; padding: 2rem;">
+                            <div class="loading-spinner"></div>
+                            <p class="text-muted">Loading orphan access findings...</p>
+                        </div>
+
+                        <div id="orphan-error-state" class="status-banner banner-danger" style="display: none; margin-bottom: 1rem;">
+                            <span id="orphan-error-message">Failed to load findings.</span>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Grant / ID</th>
+                                        <th>Contractor</th>
+                                        <th>Resource / Entitlement</th>
+                                        <th>Severity &amp; Reason</th>
+                                        <th>Detection Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orphan-findings-tbody">
+                                    <!-- Populated via orphanFindings.js -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="orphan-empty-state" class="empty-state" style="display: none; padding: 2rem; text-align: center;">
+                            <p class="text-muted">No orphan access findings match the specified filter criteria.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab View: Access Reviews & Recertification (PROMPT 08) -->
+                <div id="view-reviews" class="workspace-view" style="display: none;">
+                    <!-- Sub-View 1: Campaigns List -->
+                    <div id="review-campaigns-view">
+                        <div class="view-header">
+                            <div>
+                                <h2>Access Reviews &amp; Recertification</h2>
+                                <p class="lead-text">
+                                    Periodic and triggered recertification campaigns, accountable reviewer decisions, and enforced separation of duties.
+                                </p>
+                            </div>
+                            <div class="header-actions">
+                                <button id="btn-open-create-review-modal" class="btn btn-primary">+ Create Review Campaign</button>
+                                <button id="btn-refresh-reviews" class="btn btn-outline">&#8635; Refresh</button>
+                            </div>
+                        </div>
+
+                        <section class="content-card">
+                            <h3>Recertification Review Campaigns</h3>
+                            <div id="reviews-loading-state" class="text-center" style="display: none; padding: 2rem;">
+                                <div class="loading-spinner"></div>
+                                <p class="text-muted">Loading access review campaigns...</p>
+                            </div>
+
+                            <div id="reviews-error-state" class="status-banner banner-danger" style="display: none; margin-bottom: 1rem;">
+                                <span id="reviews-error-message">Failed to load review campaigns.</span>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Campaign Name / Description</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>Due Date / Initiator</th>
+                                            <th>Items Decided</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reviews-tbody">
+                                        <!-- Populated via reviews.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div id="reviews-empty-state" class="empty-state" style="display: none; padding: 2rem; text-align: center;">
+                                <p class="text-muted">No access review campaigns found. Click "Create Review Campaign" to initiate one.</p>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- Sub-View 2: Campaign Items Review Drawer/Workspace -->
+                    <div id="review-items-view" style="display: none;">
+                        <div class="view-header">
+                            <div>
+                                <h2 id="review-items-campaign-title">Review Items</h2>
+                                <p class="lead-text">
+                                    Evaluate active entitlements. Choose "Maintain Access" to recertify or "Revoke Access" to initiate immediate automated revocation.
+                                </p>
+                            </div>
+                            <div class="header-actions">
+                                <button id="btn-back-to-campaigns" class="btn btn-outline">&larr; Back to Campaigns</button>
+                            </div>
+                        </div>
+
+                        <section class="content-card">
+                            <div id="review-items-loading" class="text-center" style="display: none; padding: 2rem;">
+                                <div class="loading-spinner"></div>
+                                <p class="text-muted">Loading items for review...</p>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Grant Number</th>
+                                            <th>Contractor / Reviewer</th>
+                                            <th>Resource &amp; Entitlement</th>
+                                            <th>Decision Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="review-items-tbody">
+                                        <!-- Populated via reviews.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div id="review-items-empty" class="empty-state" style="display: none; padding: 2rem; text-align: center;">
+                                <p class="text-muted">No review items in this campaign.</p>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- Modal: Create Review Campaign -->
+                    <div id="modal-create-review" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+                        <div class="modal-dialog content-card" style="width: 100%; max-width: 550px; margin: 1rem; box-shadow: var(--shadow-card);">
+                            <h3>Create Access Review Campaign</h3>
+                            <p class="text-muted small">Select campaign parameters to automatically populate review items for active grants.</p>
+                            <form id="form-create-review" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+                                <div class="form-group">
+                                    <label for="input-review-name">Campaign Name *</label>
+                                    <input type="text" id="input-review-name" class="form-control" placeholder="e.g. Q4 2026 Engineering Contractor Recertification" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="input-review-desc">Description</label>
+                                    <textarea id="input-review-desc" class="form-control" rows="2" placeholder="e.g. Periodic recertification for all active GitHub team access grants."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="select-review-type">Campaign Type</label>
+                                    <select id="select-review-type" class="form-control">
+                                        <option value="PERIODIC_RECERTIFICATION">Periodic Recertification</option>
+                                        <option value="TRIGGERED_OFFBOARDING">Triggered Offboarding</option>
+                                        <option value="SECURITY_AUDIT">Security Audit</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="input-review-duedate">Due Date *</label>
+                                    <input type="date" id="input-review-duedate" class="form-control" required>
+                                </div>
+                                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+                                    <button type="button" id="btn-cancel-create-review" class="btn btn-outline">Cancel</button>
+                                    <button type="submit" id="btn-submit-create-review" class="btn btn-primary">Create Campaign</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab View: User Management (SYSTEM_ADMIN Only) -->
+                <div id="view-users" class="workspace-view" style="display: none;">
+                    <section class="content-card">
+                        <div class="card-header-row">
+                            <span class="badge-status">Identity &amp; Access Governance</span>
+                            <span class="auth-provider-pill">SYSTEM_ADMIN Only</span>
+                        </div>
+                        <div class="module-header-row" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <h2 style="margin: 0 0 0.25rem 0;">Internal Application Users</h2>
+                                <p class="lead-text" style="margin: 0;">
+                                    Enterprise governance directory of internal employees and authorized governance roles.
+                                </p>
+                            </div>
+                            <div class="module-actions">
+                                <button type="button" id="btn-open-add-user-modal" class="btn btn-primary">
+                                    <span style="margin-right: 4px;">+</span> Add User
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Filter and Search Bar -->
+                        <div class="search-filter-card" style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; background: #f8fafc; padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-border);">
+                            <div style="flex: 1; min-width: 240px;">
+                                <input type="text" id="users-search-input" class="form-input" placeholder="Search by name, email, department..." style="width: 100%;" />
+                            </div>
+                            <div style="width: 160px;">
+                                <select id="users-status-filter" class="form-input" style="width: 100%;">
+                                    <option value="ALL">All Statuses</option>
+                                    <option value="ACTIVE" selected>Active Only</option>
+                                    <option value="INACTIVE">Inactive Only</option>
+                                </select>
+                            </div>
+                            <button type="button" id="btn-refresh-users" class="btn btn-outline" title="Refresh Users List">
+                                Refresh
+                            </button>
+                            <span id="users-total-count" class="badge-status" style="margin-left: auto;">0 Users</span>
+                        </div>
+
+                        <!-- Users Data Table -->
+                        <div class="table-responsive">
+                            <table class="data-table" id="users-table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Entra Object ID</th>
+                                        <th>Department</th>
+                                        <th>Assigned Roles</th>
+                                        <th>Status</th>
+                                        <th class="text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted" style="padding: 2rem;">Loading registered users...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Modal: Register Internal Application User (Admin Only) -->
+                    <div id="modal-add-user" class="modal-backdrop" style="display: none;">
+                        <div class="modal-dialog modal-dialog-lg" role="dialog" aria-modal="true" aria-labelledby="modal-add-user-title">
+                            <div class="modal-header">
+                                <h3 id="modal-add-user-title">Register Internal Application User</h3>
+                                <button type="button" class="btn-close" id="btn-close-user-modal" aria-label="Close">&times;</button>
+                            </div>
+                            <form id="form-add-user" class="modal-form" novalidate>
+                                <div class="modal-body" style="padding: 1.5rem;">
+                                    <div id="user-form-error" class="modal-alert-box alert-danger" style="display: none; margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: 4px; background: #fef2f2; border: 1px solid #f87171; color: #b91c1c; font-size: 0.9rem;"></div>
+                                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        <div class="form-group">
+                                            <label for="user-form-display-name" class="form-label required">Full Display Name</label>
+                                            <input type="text" id="user-form-display-name" class="form-input" placeholder="e.g. Jane Doe" required autocomplete="off">
+                                            <span class="form-help">First and last name for identity governance records.</span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="user-form-email" class="form-label required">Corporate Email Address</label>
+                                            <input type="email" id="user-form-email" class="form-input" placeholder="e.g. jane.doe@accesslease.corp" required autocomplete="off">
+                                            <span class="form-help">Must match corporate Microsoft account email.</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                                        <div class="form-group">
+                                            <label for="user-form-entra-oid" class="form-label required">Microsoft Entra Object ID (oid)</label>
+                                            <input type="text" id="user-form-entra-oid" class="form-input" placeholder="e.g. 00000000-0000-0000-0000-000000000000" required autocomplete="off">
+                                            <span class="form-help">User's stable Object ID from Microsoft Entra ID.</span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="user-form-department" class="form-label">Department / Organization</label>
+                                            <input type="text" id="user-form-department" class="form-input" placeholder="e.g. Identity &amp; Access Governance">
+                                            <span class="form-help">Internal business unit or division.</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1.25rem;">
+                                        <label class="form-label required">Assigned Governance Roles</label>
+                                        <span class="form-help" style="display: block; margin-bottom: 0.5rem;">Select at least one governance role for this user:</span>
+                                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; background: #f8fafc; padding: 1rem; border-radius: 6px; border: 1px solid var(--color-border);">
+                                            <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                                                <input type="checkbox" name="user-roles" value="SECURITY_OFFICER" style="margin-top: 3px;">
+                                                <span><strong>Security Officer</strong><br><small style="color: #64748b;">High-risk approvals &amp; interventions</small></span>
+                                            </label>
+                                            <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                                                <input type="checkbox" name="user-roles" value="INTERNAL_SPONSOR" style="margin-top: 3px;">
+                                                <span><strong>Internal Sponsor</strong><br><small style="color: #64748b;">Contractor &amp; lease sponsorship</small></span>
+                                            </label>
+                                            <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                                                <input type="checkbox" name="user-roles" value="RESOURCE_OWNER" style="margin-top: 3px;">
+                                                <span><strong>Resource Owner</strong><br><small style="color: #64748b;">Resource approvals &amp; reviews</small></span>
+                                            </label>
+                                            <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                                                <input type="checkbox" name="user-roles" value="COMPLIANCE_AUDITOR" style="margin-top: 3px;">
+                                                <span><strong>Compliance Auditor</strong><br><small style="color: #64748b;">Read-only compliance trail</small></span>
+                                            </label>
+                                            <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                                                <input type="checkbox" name="user-roles" value="SYSTEM_ADMIN" style="margin-top: 3px;">
+                                                <span><strong>System Administrator</strong><br><small style="color: #64748b;">Full administrative control</small></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--color-border);">
+                                    <button type="button" class="btn btn-outline" id="btn-cancel-user-modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary" id="btn-submit-user">Register User</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab View 7: Audit & Compliance (Scheduled) -->
+                <div id="view-audit" class="workspace-view" style="display: none;">
+                    <section class="content-card">
+                        <span class="nav-badge nav-badge-planned">Upcoming Implementation</span>
+                        <h2>Audit &amp; Compliance Trail</h2>
+                        <p class="lead-text">
+                            Immutable governance logs, access reviews, and compliance export pipelines.
+                        </p>
+                        <div class="module-placeholder-box">
+                            <p><strong>Database Foundation Ready:</strong> <code>dbo.audit_events</code>, <code>dbo.access_reviews</code>, and <code>dbo.review_items</code> are active.</p>
+                        </div>
+                    </section>
+                </div>
             </div>
-        </section>
-    </main>
+        </main>
+    </div>
 
-    <footer class="app-footer">
-        <p>&copy; 2026 AccessLease Governance System. Built with HTML5, CSS3, Vanilla JS, Node.js, and Microsoft Azure.</p>
+    <!-- Application Footer -->
+    <footer class="app-footer" role="contentinfo">
+        <p>&copy; 2026 AccessLease — Contractor Access &amp; Offboarding Governance. Powered by Microsoft Entra ID &amp; Azure SQL Database.</p>
     </footer>
 
-    <!-- Microsoft Authentication Library (MSAL Browser) via Official CDN -->
-    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
-    <!-- AccessLease Vanilla JS Modules -->
+    <!-- Microsoft Authentication Library (MSAL Browser) - Local asset with Official Microsoft CDN Fallback -->
+    <script src="assets/js/msal-browser.min.js"></script>
+    <script>
+        if (!window.msal) {
+            document.write('<script src="https://alcdn.msauth.net/browser/2.38.2/js/msal-browser.min.js"><\/script>');
+        }
+    </script>
+
+    <!-- AccessLease Vanilla JavaScript Architecture Modules -->
+    <script src="assets/js/apiClient.js"></script>
     <script src="assets/js/auth.js"></script>
+    <script src="assets/js/contractors.js"></script>
+    <script src="assets/js/requests.js"></script>
+    <script src="assets/js/offboarding.js"></script>
+    <script src="assets/js/analytics.js"></script>
+    <script src="assets/js/orphanFindings.js"></script>
+    <script src="assets/js/reviews.js"></script>
+    <script src="assets/js/users.js"></script>
     <script src="assets/js/main.js"></script>
 </body>
 </html>
