@@ -1,0 +1,283 @@
+name: AccessLease CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type 'DEPLOY' to confirm production deployment"
+        required: true
+        type: string
+        default: ''
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy to Azure Functions (Flex Consumption)
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+
+    steps:
+      - name: Verify deployment confirmation
+        env:
+          CONFIRMATION_INPUT: ${{ github.event.inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION_INPUT" != "DEPLOY" ]; then
+            echo "::error::Deployment rejected. Confirmation input must be exactly 'DEPLOY'."
+            exit 1
+          fi
+          echo "Deployment confirmation verified: DEPLOY"
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm --prefix backend ci
+
+      - name: Stage frontend assets
+        run: |
+          npm --prefix backend run stage:frontend
+          # Remove non-runtime dotfiles (e.g. .gitkeep) from staged frontend
+          find backend/public -name ".*" -delete
+
+      - name: Prune development dependencies
+        run: |
+          npm --prefix backend ci --omit=dev
+          # Clean non-runtime files from dependencies (tests, spec files, git metadata)
+          find backend/node_modules -depth -type d \( -name "test" -o -name "tests" -o -name "__tests__" -o -name "__test__" -o -name ".github" \) -exec rm -rf {} +
+          find backend/node_modules -type f \( -name "*.test.*" -o -name "*.spec.*" -o -name ".git*" -o -name ".env*" \) -delete
+
+      - name: Package Function App archive
+        run: |
+          cd backend
+          # Clean development-only .gitkeep files from src
+          find src -name ".git*" -delete
+          # Create archive with required runtime components at archive root
+          zip -r ../accesslease-backend.zip host.json package.json src public node_modules -x "*/.git*" -x "*/.env*" -x "*/local.settings*" -x "*/main.json" -x "*/test/*" -x "*/tests/*" -x "*/__tests__/*" -x "*/__test__/*" -x "*/*.test.*" -x "*/*.spec.*"
+          cd ..
+
+      - name: Validate package integrity
+        run: |
+          if [ ! -f accesslease-backend.zip ]; then
+            echo "::error::Deployment package accesslease-backend.zip was not created."
+            exit 1
+          fi
+
+          echo "Inspecting all archive entries (including hidden files)..."
+          unzip -Z1 accesslease-backend.zip > /tmp/zip_entries.txt
+
+          node -e '
+            const fs = require("fs");
+            const path = require("path");
+
+            const entries = fs.readFileSync("/tmp/zip_entries.txt", "utf8")
+              .split(/\r?\n/)
+              .map(e => e.trim())
+              .filter(Boolean);
+
+            console.log(`Inspecting ${entries.length} archive entries...`);
+
+            const errors = [];
+
+            // 1. Root structure check - must be at root, not nested under backend/
+            if (entries.some(e => e.startsWith("backend/"))) {
+              errors.push("Archive entries must be located at ZIP root, not nested under backend/");
+            }
+
+            const requiredRootFiles = [
+              "host.json",
+              "package.json",
+              "src/index.js",
+              "public/index.html"
+            ];
+            for (const req of requiredRootFiles) {
+              if (!entries.includes(req)) {
+                errors.push(`Missing mandatory root entry: ${req}`);
+              }
+            }
+
+            // 2. Reject forbidden files across EVERY archive entry (including node_modules)
+            const forbiddenPatterns = [
+              { pattern: /(^|\/)\.env($|\..*)/i, desc: "Environment file (.env*)" },
+              { pattern: /(^|\/)local\.settings(\..*)?\.json$/i, desc: "Local settings file" },
+              { pattern: /(^|\/)main\.json$/i, desc: "ARM template / secrets file (main.json)" },
+              { pattern: /(^|\/)\.git($|\/)/i, desc: "Git repository data (.git/)" },
+              { pattern: /(^|\/)\.git(ignore|attributes|keep)$/i, desc: "Git metadata file" },
+              { pattern: /(^|\/)(__tests?__|tests?)(\/|$)/i, desc: "Test directory" },
+              { pattern: /(^|\/|\.)(test|spec)\.(d\.[cm]?ts|[cm]?[jt]sx?)$/i, desc: "Test specification file" },
+              { pattern: /(^|\/)(id_rsa|id_ed25519|id_ecdsa|id_dsa)($|\..*)/i, desc: "SSH private key" },
+              { pattern: /\.(pem|key|pfx|p12|pkcs12)$/i, desc: "Private key or certificate credential" }
+            ];
+
+            for (const entry of entries) {
+              for (const { pattern, desc } of forbiddenPatterns) {
+                if (pattern.test(entry)) {
+                  errors.push(`Forbidden entry detected [${desc}]: ${entry}`);
+                }
+              }
+            }
+
+            // 3. Ensure public contains only intended staged frontend assets
+            const publicEntries = entries.filter(e => e.startsWith("public/"));
+            const allowedPublicExtensions = [".html", ".css", ".js", ".json", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff", ".woff2", ".ttf"];
+            for (const entry of publicEntries) {
+              if (entry.endsWith("/")) continue;
+              const ext = path.extname(entry).toLowerCase();
+              if (!allowedPublicExtensions.includes(ext)) {
+                errors.push(`Disallowed file extension in public asset: ${entry}`);
+              }
+              if (entry.startsWith("public/src/") || entry.startsWith("public/node_modules/")) {
+                errors.push(`Server files found in public directory: ${entry}`);
+              }
+            }
+
+            // 4. Confirm production dependencies are present
+            const requiredDependencies = [
+              "node_modules/@azure/functions",
+              "node_modules/@azure/identity",
+              "node_modules/mssql",
+              "node_modules/jsonwebtoken",
+              "node_modules/jwks-rsa",
+              "node_modules/dotenv"
+            ];
+            for (const dep of requiredDependencies) {
+              const depFound = entries.some(e => e.startsWith(dep + "/") || e === dep);
+              if (!depFound) {
+                errors.push(`Missing required production dependency: ${dep}`);
+              }
+            }
+
+            // Confirm dev dependencies (azurite) are absent
+            const hasAzurite = entries.some(e => e.startsWith("node_modules/azurite/") || e === "node_modules/azurite");
+            if (hasAzurite) {
+              errors.push("Development dependency azurite is present; production pruning failed");
+            }
+
+            if (errors.length > 0) {
+              console.error("Package integrity validation FAILED with " + errors.length + " errors:");
+              errors.forEach(e => console.error(" - " + e));
+              process.exit(1);
+            }
+
+            console.log("Package integrity validation PASSED: 0 violations found.");
+          '
+
+      - name: Archive deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: accesslease-deployment-package-${{ github.sha }}
+          path: accesslease-backend.zip
+          retention-days: 14
+
+      - name: Log in to Azure via OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Functions (Flex Consumption)
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ vars.AZURE_FUNCTIONAPP_NAME }}
+          package: accesslease-backend.zip
+
+      - name: Post-deployment health verification
+        run: |
+          APP_URL="https://${{ vars.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net"
+          echo "Starting post-deployment smoke tests on $APP_URL..."
+
+          # 1. Probe /api/health with warmup retries (up to 60s for instance warmup)
+          MAX_RETRIES=6
+          RETRY_DELAY=10
+          HEALTH_OK=false
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Probe attempt $i of $MAX_RETRIES against /api/health..."
+            HTTP_CODE=$(curl -s -o /tmp/health.json -w "%{http_code}" -m 15 "$APP_URL/api/health" || true)
+            if [ "$HTTP_CODE" = "200" ]; then
+              if node -e '
+                const fs = require("fs");
+                try {
+                  const data = JSON.parse(fs.readFileSync("/tmp/health.json", "utf8"));
+                  if (data.success === true && data.data && data.data.status === "UP") {
+                    process.exit(0);
+                  }
+                } catch (e) {}
+                process.exit(1);
+              '; then
+                echo "Application health check PASSED (HTTP 200, success: true, status: UP)."
+                HEALTH_OK=true
+                break
+              fi
+            fi
+            echo "Endpoint not ready (HTTP $HTTP_CODE). Retrying in $RETRY_DELAY seconds..."
+            sleep $RETRY_DELAY
+          done
+
+          if [ "$HEALTH_OK" != "true" ]; then
+            echo "::error::Application health check (/api/health) failed after $MAX_RETRIES attempts."
+            exit 1
+          fi
+
+          # 2. Probe /api/health/db
+          echo "Probing /api/health/db..."
+          DB_HTTP_CODE=$(curl -s -o /tmp/health_db.json -w "%{http_code}" -m 15 "$APP_URL/api/health/db" || true)
+          if [ "$DB_HTTP_CODE" != "200" ]; then
+            echo "::error::Database health check (/api/health/db) failed with HTTP $DB_HTTP_CODE."
+            exit 1
+          fi
+
+          if ! node -e '
+            const fs = require("fs");
+            try {
+              const data = JSON.parse(fs.readFileSync("/tmp/health_db.json", "utf8"));
+              if (data.success === true && data.data && data.data.status === "CONNECTED") {
+                process.exit(0);
+              }
+            } catch (e) {}
+            process.exit(1);
+          '; then
+            echo "::error::Database health response validation failed (expected success: true, status: CONNECTED)."
+            exit 1
+          fi
+          echo "Database health check PASSED (HTTP 200, success: true, status: CONNECTED)."
+
+          # 3. Probe /api/auth/config
+          echo "Probing /api/auth/config..."
+          AUTH_HTTP_CODE=$(curl -s -o /tmp/auth_config.json -w "%{http_code}" -m 15 "$APP_URL/api/auth/config" || true)
+          if [ "$AUTH_HTTP_CODE" != "200" ]; then
+            echo "::error::Auth configuration check (/api/auth/config) failed with HTTP $AUTH_HTTP_CODE."
+            exit 1
+          fi
+
+          if ! node -e '
+            const fs = require("fs");
+            try {
+              const data = JSON.parse(fs.readFileSync("/tmp/auth_config.json", "utf8"));
+              if (data.success === true && data.data && data.data.configured === true) {
+                process.exit(0);
+              }
+            } catch (e) {}
+            process.exit(1);
+          '; then
+            echo "::error::Auth configuration response validation failed (expected success: true, configured: true)."
+            exit 1
+          fi
+          echo "Auth configuration check PASSED (HTTP 200, success: true, configured: true)."
+
+          echo "All post-deployment health verification checks PASSED successfully."
