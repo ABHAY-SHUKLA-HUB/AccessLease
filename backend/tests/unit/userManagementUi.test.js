@@ -77,4 +77,23 @@ describe('Unit: User Management UI & Form Validation', () => {
             assert.ok(html.includes('<script src="assets/js/users.js"></script>'), `${filePath} must load users.js`);
         }
     });
+
+    test('5. apiClient.js implements patch method required for status toggling', () => {
+        const apiClientFile = path.resolve(__dirname, '../../../frontend/assets/js/apiClient.js');
+        assert.ok(fs.existsSync(apiClientFile));
+        const content = fs.readFileSync(apiClientFile, 'utf8');
+
+        assert.ok(content.includes('async patch(endpoint, body, options = {})'), 'apiClient.js must implement patch method');
+        assert.ok(content.includes("method: 'PATCH'"), 'patch method must pass method: PATCH');
+        assert.ok(content.includes('async updateUserStatus(userId, isActive)'), 'apiClient.js should provide updateUserStatus convenience method');
+    });
+
+    test('6. users.js status toggle handler enforces concurrency protection and loading states', () => {
+        const jsContent = fs.readFileSync(USERS_JS_FILE, 'utf8');
+
+        assert.ok(jsContent.includes('this.isUpdatingStatus'), 'Must have isUpdatingStatus concurrency guard');
+        assert.ok(jsContent.includes("btn.textContent = 'Updating...'"), 'Must show Updating... loading state on button');
+        assert.ok(jsContent.includes('this.showNotification('), 'Must trigger notification on status change');
+        assert.ok(jsContent.includes('await this.loadUsers()'), 'Must refresh user list after status change');
+    });
 });

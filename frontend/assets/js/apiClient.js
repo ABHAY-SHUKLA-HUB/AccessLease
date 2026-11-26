@@ -1,7 +1,7 @@
 /**
  * AccessLease — Centralized API Client Module
  * Target: Vanilla JavaScript (ES6+)
- * 
+ *
  * Responsibilities:
  * - Centralized HTTP client for all frontend API communication.
  * - Dynamic base URL resolution (defaults to current origin, supports custom override).
@@ -21,7 +21,7 @@
 
         /**
          * Sets or updates the base URL for API requests.
-         * @param {string} url 
+         * @param {string} url
          */
         setBaseUrl(url) {
             if (url && typeof url === 'string') {
@@ -168,8 +168,8 @@
 
         /**
          * HTTP GET convenience method
-         * @param {string} endpoint 
-         * @param {object} [options={}] 
+         * @param {string} endpoint
+         * @param {object} [options={}]
          * @returns {Promise<object>}
          */
         async get(endpoint, options = {}) {
@@ -178,9 +178,9 @@
 
         /**
          * HTTP POST convenience method
-         * @param {string} endpoint 
-         * @param {any} body 
-         * @param {object} [options={}] 
+         * @param {string} endpoint
+         * @param {any} body
+         * @param {object} [options={}]
          * @returns {Promise<object>}
          */
         async post(endpoint, body, options = {}) {
@@ -189,9 +189,9 @@
 
         /**
          * HTTP PUT convenience method
-         * @param {string} endpoint 
-         * @param {any} body 
-         * @param {object} [options={}] 
+         * @param {string} endpoint
+         * @param {any} body
+         * @param {object} [options={}]
          * @returns {Promise<object>}
          */
         async put(endpoint, body, options = {}) {
@@ -199,9 +199,20 @@
         }
 
         /**
+         * HTTP PATCH convenience method
+         * @param {string} endpoint
+         * @param {any} body
+         * @param {object} [options={}]
+         * @returns {Promise<object>}
+         */
+        async patch(endpoint, body, options = {}) {
+            return this.request(endpoint, { ...options, method: 'PATCH', body });
+        }
+
+        /**
          * HTTP DELETE convenience method
-         * @param {string} endpoint 
-         * @param {object} [options={}] 
+         * @param {string} endpoint
+         * @param {object} [options={}]
          * @returns {Promise<object>}
          */
         async delete(endpoint, options = {}) {
@@ -337,6 +348,33 @@
         async submitApprovalDecision(stepId, decisionPayload) {
             if (!stepId) throw new Error('Approval step ID is required.');
             return this.post(`/api/approvals/${encodeURIComponent(stepId)}/decision`, decisionPayload);
+        }
+
+        // ---------------------------------------------------------------------
+        // User Governance & Administration API Methods
+        // ---------------------------------------------------------------------
+        async listUsers(params = {}) {
+            const query = new URLSearchParams();
+            for (const [k, v] of Object.entries(params)) {
+                if (v !== undefined && v !== null && v !== '') {
+                    query.set(k, String(v));
+                }
+            }
+            const qStr = query.toString();
+            return this.get(`/api/users${qStr ? '?' + qStr : ''}`);
+        }
+
+        async createUser(payload) {
+            return this.post('/api/users', payload);
+        }
+
+        async updateUserStatus(userId, isActive) {
+            if (!userId) throw new Error('User ID is required.');
+            return this.patch(`/api/users/${encodeURIComponent(userId)}/status`, { is_active: Boolean(isActive) });
+        }
+
+        async listRoles() {
+            return this.get('/api/roles');
         }
 
         // ---------------------------------------------------------------------

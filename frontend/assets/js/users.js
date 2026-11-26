@@ -1,6 +1,6 @@
 /**
  * AccessLease — Internal User Governance & Administration Frontend Controller
- * 
+ *
  * Rules:
  * - Pure Vanilla JavaScript (ES6+)
  * - Zero external frontend frameworks
@@ -297,18 +297,25 @@
             const buttons = document.querySelectorAll('.btn-toggle-user-status');
             buttons.forEach(btn => {
                 btn.addEventListener('click', async () => {
+                    if (this.isUpdatingStatus || btn.disabled) {
+                        return;
+                    }
+
                     const userId = btn.getAttribute('data-id');
                     const currentActive = btn.getAttribute('data-active') === 'true';
                     const targetState = !currentActive;
                     const actionName = targetState ? 'activate' : 'deactivate';
+                    const originalText = btn.textContent;
 
                     if (!confirm(`Are you sure you want to ${actionName} this user account?`)) {
                         return;
                     }
 
+                    this.isUpdatingStatus = true;
+                    btn.disabled = true;
+                    btn.textContent = 'Updating...';
+
                     try {
-                        btn.disabled = true;
-                        btn.textContent = 'Updating...';
                         const res = await window.apiClient.patch(`/api/users/${userId}/status`, {
                             is_active: targetState
                         });
@@ -316,12 +323,18 @@
                             await this.loadUsers();
                             this.showNotification(`User account ${actionName}d successfully.`, 'success');
                         } else {
-                            alert(res?.error?.message || `Failed to ${actionName} user.`);
+                            const errorMsg = res?.error?.message || `Failed to ${actionName} user.`;
+                            this.showNotification(errorMsg, 'error');
                         }
                     } catch (err) {
-                        alert(err?.message || `Failed to ${actionName} user.`);
+                        const errorMsg = err?.message || err?.error?.message || `Failed to ${actionName} user.`;
+                        this.showNotification(errorMsg, 'error');
                     } finally {
-                        btn.disabled = false;
+                        this.isUpdatingStatus = false;
+                        if (btn && btn.isConnected) {
+                            btn.disabled = false;
+                            btn.textContent = originalText;
+                        }
                     }
                 });
             });
@@ -333,8 +346,14 @@
 
             const toast = document.createElement('div');
             toast.id = 'user-mgmt-toast';
-            toast.className = `alert-banner ${type === 'success' ? 'alert-success' : 'alert-info'}`;
-            toast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999; padding: 12px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: fadeIn 0.2s;';
+            const alertClass = type === 'success' ? 'alert-success' : (type === 'error' ? 'alert-danger' : 'alert-info');
+            toast.className = `alert-banner ${alertClass}`;
+
+            const bgColor = type === 'success' ? '#f0fdf4' : (type === 'error' ? '#fef2f2' : '#eff6ff');
+            const borderColor = type === 'success' ? '#bbf7d0' : (type === 'error' ? '#fecaca' : '#bfdbfe');
+            const textColor = type === 'success' ? '#166534' : (type === 'error' ? '#991b1b' : '#1e40af');
+
+            toast.style.cssText = `position: fixed; bottom: 20px; right: 20px; z-index: 9999; padding: 12px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: fadeIn 0.2s; background-color: ${bgColor}; border: 1px solid ${borderColor}; color: ${textColor}; font-weight: 500; font-size: 0.9rem; max-width: 400px;`;
             toast.textContent = message;
             document.body.appendChild(toast);
             setTimeout(() => { toast.remove(); }, 4000);

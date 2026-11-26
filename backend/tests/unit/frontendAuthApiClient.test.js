@@ -482,6 +482,76 @@ describe('Unit: Frontend ApiClient (apiClient.js)', () => {
         assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/approvals/STEP-001/decision');
         assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer workflow-auth-token');
     });
+
+    test('6h. ApiClient.patch: supports HTTP PATCH requests with Bearer token, JSON headers and body', async () => {
+        let capturedMethod = null;
+        let capturedUrl = null;
+        let capturedHeaders = null;
+        let capturedBody = null;
+
+        mockWindow.fetch = async (url, options) => {
+            capturedMethod = options.method;
+            capturedUrl = url;
+            capturedHeaders = options.headers;
+            capturedBody = JSON.parse(options.body);
+            return {
+                ok: true,
+                status: 200,
+                headers: new Headers({ 'content-type': 'application/json' }),
+                json: async () => ({
+                    success: true,
+                    data: { user: { user_id: 'USER-99', is_active: false } }
+                })
+            };
+        };
+
+        loadScriptsInContext(mockWindow);
+        mockWindow.AccessLeaseAuth.getAccessToken = async () => 'patch-test-token';
+
+        assert.strictEqual(typeof mockWindow.apiClient.patch, 'function', 'apiClient.patch must be a function');
+
+        const res = await mockWindow.apiClient.patch('/api/users/USER-99/status', { is_active: false });
+
+        assert.strictEqual(res.success, true);
+        assert.strictEqual(capturedMethod, 'PATCH');
+        assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/users/USER-99/status');
+        assert.strictEqual(capturedHeaders.get('Authorization'), 'Bearer patch-test-token');
+        assert.strictEqual(capturedHeaders.get('Content-Type'), 'application/json');
+        assert.deepStrictEqual(capturedBody, { is_active: false });
+    });
+
+    test('6i. ApiClient.updateUserStatus: dispatches PATCH /api/users/{id}/status', async () => {
+        let capturedMethod = null;
+        let capturedUrl = null;
+        let capturedBody = null;
+
+        mockWindow.fetch = async (url, options) => {
+            capturedMethod = options.method;
+            capturedUrl = url;
+            capturedBody = JSON.parse(options.body);
+            return {
+                ok: true,
+                status: 200,
+                headers: new Headers({ 'content-type': 'application/json' }),
+                json: async () => ({
+                    success: true,
+                    data: { user: { user_id: 'USER-123', is_active: true } }
+                })
+            };
+        };
+
+        loadScriptsInContext(mockWindow);
+        mockWindow.AccessLeaseAuth.getAccessToken = async () => 'user-token';
+
+        assert.strictEqual(typeof mockWindow.apiClient.updateUserStatus, 'function');
+
+        const res = await mockWindow.apiClient.updateUserStatus('USER-123', true);
+
+        assert.strictEqual(res.success, true);
+        assert.strictEqual(capturedMethod, 'PATCH');
+        assert.strictEqual(capturedUrl, 'https://func-accesslease-dev-krfptp6h5dssa.azurewebsites.net/api/users/USER-123/status');
+        assert.deepStrictEqual(capturedBody, { is_active: true });
+    });
 });
 
 describe('Unit: Frontend AuthManager (auth.js)', () => {
