@@ -476,6 +476,7 @@
             const authCard = document.getElementById('auth-status-container');
             if (!authCard) return;
 
+            authCard.style.display = 'block';
             authCard.innerHTML = `
                 <div class="auth-box auth-box-unauth">
                     <div class="auth-header-row">
@@ -517,6 +518,7 @@
             const authCard = document.getElementById('auth-status-container');
             if (authCard) {
                 authCard.innerHTML = ''; // Replaced by the full authenticated workspace
+                authCard.style.display = 'none';
             }
 
             const shellView = document.getElementById('authenticated-shell-view');

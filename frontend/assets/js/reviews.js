@@ -24,6 +24,12 @@
             refreshBtn.addEventListener('click', loadReviews);
         }
 
+        // Status filter for campaigns list
+        const statusFilter = document.getElementById('review-status-filter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', loadReviews);
+        }
+
         const openCreateModalBtn = document.getElementById('btn-open-create-review-modal');
         if (openCreateModalBtn) {
             openCreateModalBtn.addEventListener('click', () => {
@@ -90,7 +96,15 @@
 
         try {
             const res = await window.apiClient.post('/api/reviews', payload);
-            window.alert(`Access Review Campaign "${payload.reviewName}" created successfully! Generated ${res?.data?.total_items || 0} review items.`);
+            const totalItems = res?.data?.total_items ?? 0;
+
+            if (totalItems === 0) {
+                window.alert(
+                    `Campaign "${payload.reviewName}" was created, but no active grants matched the scope criteria at this time (0 review items generated).\n\nThis can happen when all contractor grants have already been reviewed or no active leases exist. The campaign has been recorded and will appear in the list.`
+                );
+            } else {
+                window.alert(`Access Review Campaign "${payload.reviewName}" created successfully! Generated ${totalItems} review items.`);
+            }
 
             const modal = document.getElementById('modal-create-review');
             if (modal) modal.style.display = 'none';
@@ -119,10 +133,17 @@
         if (errorState) errorState.style.display = 'none';
 
         try {
-            const response = await window.apiClient.get('/api/reviews?limit=50');
+            const statusFilter = document.getElementById('review-status-filter');
+            const statusVal = statusFilter ? statusFilter.value : '';
+            const qs = statusVal ? `?status=${encodeURIComponent(statusVal)}&limit=50` : '?limit=50';
+
+            const response = await window.apiClient.get(`/api/reviews${qs}`);
             const reviews = response?.data || [];
 
             if (loadingState) loadingState.style.display = 'none';
+
+            // Update KPIs from full (unfiltered) dataset
+            await refreshReviewKPIs();
 
             if (!reviews || reviews.length === 0) {
                 if (tbody) tbody.innerHTML = '';
@@ -142,6 +163,26 @@
                 const msg = document.getElementById('reviews-error-message');
                 if (msg) msg.textContent = err.message || 'Failed to retrieve review campaigns.';
             }
+        }
+    }
+
+    async function refreshReviewKPIs() {
+        try {
+            const allRes = await window.apiClient.get('/api/reviews?limit=100');
+            const all = allRes?.data || [];
+
+            const total = all.length;
+            const active = all.filter(r => r.status === 'ACTIVE' || r.status === 'IN_PROGRESS').length;
+            const totalDecided = all.reduce((s, r) => s + (r.decided_items ?? 0), 0);
+            const totalRevoked = all.reduce((s, r) => s + (r.revoked_items ?? 0), 0);
+
+            const setKpi = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setKpi('review-kpi-total', total);
+            setKpi('review-kpi-active', active);
+            setKpi('review-kpi-decided', totalDecided);
+            setKpi('review-kpi-revoked', totalRevoked);
+        } catch (_) {
+            // Non-critical — silent skip
         }
     }
 
@@ -357,7 +398,8 @@
 
     window.AccessLeaseReviews = {
         init,
-        loadReviews
+        loadReviews,
+        refreshReviewKPIs
     };
 
     document.addEventListener('DOMContentLoaded', init);

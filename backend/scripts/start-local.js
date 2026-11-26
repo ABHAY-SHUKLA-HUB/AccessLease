@@ -92,6 +92,11 @@ const {
     submitReviewDecision
 } = require('../src/functions/reviews');
 const { getAnalyticsSummary } = require('../src/functions/analytics');
+const {
+    listAuditEvents,
+    getAuditEventById,
+    getAuditStats
+} = require('../src/functions/audit');
 const provisioningWorker = require('../src/services/provisioningWorker');
 const env = require('../src/config/environment');
 const logger = require('../src/utils/logger');
@@ -241,6 +246,7 @@ const server = http.createServer(async (req, res) => {
             const reviewIdMatch = pathname.match(/^\/api\/reviews\/([a-zA-Z0-9-]+)$/);
             const reviewDecisionMatch = pathname.match(/^\/api\/reviews\/items\/([a-zA-Z0-9-]+)\/decision$/);
             const userStatusMatch = pathname.match(/^\/api\/users\/([a-zA-Z0-9-]+)\/status$/);
+            const auditEventIdMatch = pathname.match(/^\/api\/audit\/events\/([0-9]+)$/);
 
             if (method === 'GET' && pathname === '/api/health') {
                 result = await getApplicationHealth(mockRequest, mockContext);
@@ -403,6 +409,13 @@ const server = http.createServer(async (req, res) => {
                 result = await submitReviewDecision(mockRequest, mockContext);
             } else if (method === 'GET' && pathname === '/api/analytics/summary') {
                 result = await getAnalyticsSummary(mockRequest, mockContext);
+            } else if (method === 'GET' && pathname === '/api/audit/events') {
+                result = await listAuditEvents(mockRequest, mockContext);
+            } else if (method === 'GET' && pathname === '/api/audit/stats') {
+                result = await getAuditStats(mockRequest, mockContext);
+            } else if (method === 'GET' && auditEventIdMatch) {
+                mockRequest.params = { id: auditEventIdMatch[1] };
+                result = await getAuditEventById(mockRequest, mockContext);
             } else {
                 result = {
                     status: 404,

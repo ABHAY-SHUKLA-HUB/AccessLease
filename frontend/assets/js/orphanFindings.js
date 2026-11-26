@@ -11,7 +11,7 @@
     'use strict';
 
     let currentFilters = {
-        status: '',
+        status: 'OPEN',
         severity: '',
         reason: ''
     };
@@ -118,6 +118,8 @@
             if (!findings || findings.length === 0) {
                 if (tbody) tbody.innerHTML = '';
                 if (emptyState) emptyState.style.display = 'block';
+                // Load KPIs from a full (unfiltered) snapshot when no results for the current filter
+                await refreshKPIs();
                 return;
             }
 
@@ -125,6 +127,8 @@
                 tbody.innerHTML = findings.map(f => renderFindingRow(f)).join('');
                 attachRowActionHandlers(tbody);
             }
+
+            await refreshKPIs();
         } catch (err) {
             console.error('[AccessLease Orphan Findings] Failed to load findings:', err);
             if (loadingState) loadingState.style.display = 'none';
@@ -133,6 +137,28 @@
                 const msg = document.getElementById('orphan-error-message');
                 if (msg) msg.textContent = err.message || 'Failed to retrieve findings from backend.';
             }
+        }
+    }
+
+    async function refreshKPIs() {
+        try {
+            // Fetch all findings without status filter to compute KPI breakdown
+            const allRes = await window.apiClient.get('/api/orphan-access/findings?limit=200');
+            const allFindings = allRes?.data?.findings || [];
+
+            const open = allFindings.filter(f => f.status === 'OPEN').length;
+            const investigating = allFindings.filter(f => f.status === 'INVESTIGATING').length;
+            const critHigh = allFindings.filter(f => f.severity === 'CRITICAL' || f.severity === 'HIGH').length;
+            const revInitiated = allFindings.filter(f => f.status === 'REVOCATION_INITIATED').length;
+            const resolved = allFindings.filter(f => f.status === 'RESOLVED' || f.status === 'FALSE_POSITIVE').length;
+
+            const setKpi = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setKpi('orphan-kpi-open', open + investigating);
+            setKpi('orphan-kpi-critical', critHigh);
+            setKpi('orphan-kpi-revocation', revInitiated);
+            setKpi('orphan-kpi-resolved', resolved);
+        } catch (_) {
+            // KPI refresh failure is non-critical — silently skip
         }
     }
 
@@ -271,7 +297,8 @@
 
     window.AccessLeaseOrphanFindings = {
         init,
-        loadFindings
+        loadFindings,
+        refreshKPIs
     };
 
     document.addEventListener('DOMContentLoaded', init);

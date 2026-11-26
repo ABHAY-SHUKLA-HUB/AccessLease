@@ -1381,7 +1381,6 @@
                                 </div>
                             </section>
                         </div>
-                        </div>
                     </div>
                 </div>
 
@@ -1389,14 +1388,37 @@
                 <div id="view-orphan-findings" class="workspace-view" style="display: none;">
                     <div class="view-header">
                         <div>
+                            <span class="badge-status">Security &amp; Compliance</span>
                             <h2>Orphan &amp; Stale Access Detection</h2>
-                            <p class="lead-text">
-                                Database-driven identification of lingering access: active grants on terminated engagements, expired grants, and invalid references.
-                            </p>
+                            <p class="lead-text">Database-driven identification of lingering access: active grants on terminated engagements, expired grants, and invalid references.</p>
                         </div>
                         <div class="header-actions">
-                            <button id="btn-trigger-orphan-scan" class="btn btn-primary">Trigger Orphan Detection Scan</button>
+                            <button id="btn-trigger-orphan-scan" class="btn btn-primary">&#128269; Trigger Orphan Scan</button>
                             <button id="btn-refresh-orphan-findings" class="btn btn-outline">&#8635; Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- KPI Summary Cards -->
+                    <div class="stat-card-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div class="stat-card stat-red">
+                            <span class="stat-label">Open Findings</span>
+                            <span class="stat-value" id="orphan-kpi-open">—</span>
+                            <span class="stat-desc">Require immediate action</span>
+                        </div>
+                        <div class="stat-card stat-orange">
+                            <span class="stat-label">Critical / High Risk</span>
+                            <span class="stat-value" id="orphan-kpi-critical">—</span>
+                            <span class="stat-desc">Highest severity findings</span>
+                        </div>
+                        <div class="stat-card stat-blue">
+                            <span class="stat-label">Revocations Initiated</span>
+                            <span class="stat-value" id="orphan-kpi-revocation">—</span>
+                            <span class="stat-desc">In-progress deprovisioning</span>
+                        </div>
+                        <div class="stat-card stat-green">
+                            <span class="stat-label">Resolved</span>
+                            <span class="stat-value" id="orphan-kpi-resolved">—</span>
+                            <span class="stat-desc">Closed findings</span>
                         </div>
                     </div>
 
@@ -1405,37 +1427,37 @@
                     <section class="content-card">
                         <!-- Filters -->
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
-                            <h3>Detected Orphan Access Findings</h3>
-                            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                                <select id="orphan-status-filter" class="form-control" style="width: auto;">
+                            <h3 style="margin: 0;">Detected Orphan Access Findings</h3>
+                            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                                <select id="orphan-status-filter" class="form-control" style="width: auto; min-width: 130px;">
                                     <option value="">All Statuses</option>
-                                    <option value="OPEN" selected>OPEN</option>
-                                    <option value="INVESTIGATING">INVESTIGATING</option>
-                                    <option value="REVOCATION_INITIATED">REVOCATION_INITIATED</option>
-                                    <option value="RESOLVED">RESOLVED</option>
-                                    <option value="FALSE_POSITIVE">FALSE_POSITIVE</option>
+                                    <option value="OPEN" selected>Open</option>
+                                    <option value="INVESTIGATING">Investigating</option>
+                                    <option value="REVOCATION_INITIATED">Revocation Initiated</option>
+                                    <option value="RESOLVED">Resolved</option>
+                                    <option value="FALSE_POSITIVE">False Positive</option>
                                 </select>
-                                <select id="orphan-severity-filter" class="form-control" style="width: auto;">
+                                <select id="orphan-severity-filter" class="form-control" style="width: auto; min-width: 130px;">
                                     <option value="">All Severities</option>
-                                    <option value="CRITICAL">CRITICAL</option>
-                                    <option value="HIGH">HIGH</option>
-                                    <option value="MEDIUM">MEDIUM</option>
-                                    <option value="LOW">LOW</option>
+                                    <option value="CRITICAL">Critical</option>
+                                    <option value="HIGH">High</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="LOW">Low</option>
                                 </select>
-                                <select id="orphan-reason-filter" class="form-control" style="width: auto;">
+                                <select id="orphan-reason-filter" class="form-control" style="width: auto; min-width: 160px;">
                                     <option value="">All Reasons</option>
-                                    <option value="ENDED_ENGAGEMENT_ACTIVE_GRANT">Ended Engagement Active Grant</option>
-                                    <option value="EXPIRED_ENGAGEMENT_ACTIVE_GRANT">Expired Engagement Active Grant</option>
-                                    <option value="EXPIRED_GRANT_ACTIVE_STATUS">Expired Grant Active Status</option>
-                                    <option value="INVALID_OR_DELETED_REFERENCE">Invalid or Inactive Reference</option>
-                                    <option value="INCONSISTENT_LIFECYCLE_STATE">Inconsistent Lifecycle State</option>
+                                    <option value="ENDED_ENGAGEMENT_ACTIVE_GRANT">Ended Engagement</option>
+                                    <option value="EXPIRED_ENGAGEMENT_ACTIVE_GRANT">Expired Engagement</option>
+                                    <option value="EXPIRED_GRANT_ACTIVE_STATUS">Expired Grant</option>
+                                    <option value="INVALID_OR_DELETED_REFERENCE">Invalid Reference</option>
+                                    <option value="INCONSISTENT_LIFECYCLE_STATE">Inconsistent State</option>
                                 </select>
                             </div>
                         </div>
 
                         <div id="orphan-loading-state" class="text-center" style="display: none; padding: 2rem;">
                             <div class="loading-spinner"></div>
-                            <p class="text-muted">Loading orphan access findings...</p>
+                            <p class="text-muted">Scanning for orphan access findings...</p>
                         </div>
 
                         <div id="orphan-error-state" class="status-banner banner-danger" style="display: none; margin-bottom: 1rem;">
@@ -1446,7 +1468,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Grant / ID</th>
+                                        <th>Grant / Finding ID</th>
                                         <th>Contractor</th>
                                         <th>Resource / Entitlement</th>
                                         <th>Severity &amp; Reason</th>
@@ -1461,8 +1483,10 @@
                             </table>
                         </div>
 
-                        <div id="orphan-empty-state" class="empty-state" style="display: none; padding: 2rem; text-align: center;">
-                            <p class="text-muted">No orphan access findings match the specified filter criteria.</p>
+                        <div id="orphan-empty-state" style="display: none; padding: 3rem; text-align: center;">
+                            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">&#10003;</div>
+                            <p style="font-weight: 600; color: #059669; margin-bottom: 0.25rem;">No Orphan Findings Detected</p>
+                            <p class="text-muted" style="font-size: 0.875rem;">All active grants have valid engagements and lifecycle states. Run a scan to refresh.</p>
                         </div>
                     </section>
                 </div>
@@ -1473,10 +1497,9 @@
                     <div id="review-campaigns-view">
                         <div class="view-header">
                             <div>
+                                <span class="badge-status">SOC 2 Type II · Periodic Recertification</span>
                                 <h2>Access Reviews &amp; Recertification</h2>
-                                <p class="lead-text">
-                                    Periodic and triggered recertification campaigns, accountable reviewer decisions, and enforced separation of duties.
-                                </p>
+                                <p class="lead-text">Periodic and triggered recertification campaigns, accountable reviewer decisions, and enforced separation of duties.</p>
                             </div>
                             <div class="header-actions">
                                 <button id="btn-open-create-review-modal" class="btn btn-primary">+ Create Review Campaign</button>
@@ -1484,8 +1507,44 @@
                             </div>
                         </div>
 
+                        <!-- KPI Summary Cards -->
+                        <div class="stat-card-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                            <div class="stat-card stat-blue">
+                                <span class="stat-label">Total Campaigns</span>
+                                <span class="stat-value" id="review-kpi-total">—</span>
+                                <span class="stat-desc">All time campaigns</span>
+                            </div>
+                            <div class="stat-card stat-green">
+                                <span class="stat-label">Active Campaigns</span>
+                                <span class="stat-value" id="review-kpi-active">—</span>
+                                <span class="stat-desc">Currently in review</span>
+                            </div>
+                            <div class="stat-card stat-cyan">
+                                <span class="stat-label">Items Decided</span>
+                                <span class="stat-value" id="review-kpi-decided">—</span>
+                                <span class="stat-desc">Reviewed entitlements</span>
+                            </div>
+                            <div class="stat-card stat-red">
+                                <span class="stat-label">Revocations Triggered</span>
+                                <span class="stat-value" id="review-kpi-revoked">—</span>
+                                <span class="stat-desc">From review decisions</span>
+                            </div>
+                        </div>
+
                         <section class="content-card">
-                            <h3>Recertification Review Campaigns</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+                                <h3 style="margin: 0;">Recertification Review Campaigns</h3>
+                                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                                    <select id="review-status-filter" class="form-control" style="width: auto; min-width: 130px;">
+                                        <option value="">All Statuses</option>
+                                        <option value="ACTIVE">Active</option>
+                                        <option value="COMPLETED">Completed</option>
+                                        <option value="DRAFT">Draft</option>
+                                        <option value="EXPIRED">Expired</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div id="reviews-loading-state" class="text-center" style="display: none; padding: 2rem;">
                                 <div class="loading-spinner"></div>
                                 <p class="text-muted">Loading access review campaigns...</p>
@@ -1513,8 +1572,10 @@
                                 </table>
                             </div>
 
-                            <div id="reviews-empty-state" class="empty-state" style="display: none; padding: 2rem; text-align: center;">
-                                <p class="text-muted">No access review campaigns found. Click "Create Review Campaign" to initiate one.</p>
+                            <div id="reviews-empty-state" style="display: none; padding: 3rem; text-align: center;">
+                                <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">&#128196;</div>
+                                <p style="font-weight: 600; color: #334155; margin-bottom: 0.25rem;">No Review Campaigns Yet</p>
+                                <p class="text-muted" style="font-size: 0.875rem;">Click <strong>+ Create Review Campaign</strong> to launch your first SOC 2 access recertification.</p>
                             </div>
                         </section>
                     </div>

@@ -116,6 +116,9 @@ function setupNavigation() {
                 if (view.id === targetViewId) {
                     view.style.display = 'block';
                     
+                    const mainEl = document.getElementById('main-content');
+                    if (mainEl) mainEl.scrollTop = 0;
+                    
                     // Trigger refresh on dynamic module views
                     if (targetViewId === 'view-governance-shell') {
                         loadDashboardMetrics();
@@ -133,8 +136,10 @@ function setupNavigation() {
                         window.AccessLeaseAnalytics.loadAnalyticsSummary();
                     } else if (targetViewId === 'view-orphan-findings' && window.AccessLeaseOrphanFindings) {
                         window.AccessLeaseOrphanFindings.loadFindings();
+                        window.AccessLeaseOrphanFindings.refreshKPIs();
                     } else if (targetViewId === 'view-reviews' && window.AccessLeaseReviews) {
                         window.AccessLeaseReviews.loadReviews();
+                        window.AccessLeaseReviews.refreshReviewKPIs();
                     } else if (targetViewId === 'view-audit' && window.AccessLeaseAudit) {
                         window.AccessLeaseAudit.loadAuditTrail();
                     } else if (targetViewId === 'view-users' && window.AccessLeaseUsersModule) {
